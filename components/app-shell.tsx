@@ -1,0 +1,266 @@
+"use client";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useDemo } from "./demo-provider";
+import { Icon } from "./ui/icon";
+
+const navigation = [
+  { href: "/", label: "Overview", icon: "grid" },
+  { href: "/rfqs", label: "Quote requests", icon: "inbox" },
+  { href: "/quotations", label: "Quotations", icon: "file" },
+  { href: "/orders", label: "Orders", icon: "bag" },
+  { href: "/products", label: "Products", icon: "box" },
+  { href: "/suppliers", label: "Suppliers", icon: "people" },
+  { href: "/settings", label: "Settings", icon: "settings" },
+];
+export function Brand() {
+  return (
+    <div className="brand">
+      <div className="brand-mark">
+        <Icon name="fish" size={29} />
+      </div>
+      <div>
+        Bantayan<span>SEAFOODS</span>
+      </div>
+    </div>
+  );
+}
+export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { ready, authenticated, logout, data } = useDemo();
+  const [mobile, setMobile] = useState(false);
+  const [notifications, setNotifications] = useState(false);
+  const [search, setSearch] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (ready && !authenticated && pathname !== "/login")
+      router.replace("/login");
+  }, [ready, authenticated, pathname, router]);
+  useEffect(() => {
+    function handleKey(event: KeyboardEvent) {
+      const target = event.target;
+      const editing =
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
+      if (event.key === "/" && !editing && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+      if (event.key === "Escape") {
+        setSearch("");
+        setNotifications(false);
+        setMobile(false);
+      }
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, []);
+  if (pathname === "/login") return children;
+  if (!ready || !authenticated)
+    return (
+      <div className="workspace-loading">
+        <Brand />
+        <p>Opening your demo workspace…</p>
+      </div>
+    );
+  const active =
+    navigation.find((n) =>
+      n.href === "/" ? pathname === "/" : pathname.startsWith(n.href),
+    ) || navigation[0];
+  const results = [
+    ...data.rfqs.map((r) => ({
+      label: `${r.id} · ${r.customer}`,
+      href: `/rfqs/${r.id}`,
+    })),
+    ...data.products.map((p) => ({ label: p.name, href: `/products/${p.id}` })),
+    ...data.quotes.map((q) => ({
+      label: `${q.id} · ${data.rfqs.find((r) => r.id === q.rfqId)?.customer ?? "Quotation"}`,
+      href: `/quotations/${q.id}`,
+    })),
+    ...data.orders.map((o) => ({
+      label: `${o.id} · ${o.customer}`,
+      href: `/orders/${o.id}`,
+    })),
+    ...navigation.map((n) => ({ label: n.label, href: n.href })),
+  ]
+    .filter((r) => r.label.toLowerCase().includes(search.toLowerCase()))
+    .slice(0, 6);
+  function closeNav() {
+    setMobile(false);
+    setSearch("");
+    setNotifications(false);
+  }
+  return (
+    <div className="app-shell">
+      {mobile && (
+        <button
+          className="sidebar-scrim"
+          aria-label="Close navigation"
+          onClick={() => setMobile(false)}
+        />
+      )}
+      <aside
+        id="workspace-sidebar"
+        className={`sidebar ${mobile ? "is-open" : ""}`}
+      >
+        <Link
+          href="/"
+          aria-label="Bantayan Seafoods overview"
+          onClick={closeNav}
+        >
+          <Brand />
+        </Link>
+        <div className="workspace-label">YOUR WORKSPACE</div>
+        <nav aria-label="Main navigation">
+          {navigation.map((n) => (
+            <Link
+              key={n.href}
+              href={n.href}
+              onClick={closeNav}
+              aria-current={active.href === n.href ? "page" : undefined}
+              className={`nav-link ${active.href === n.href ? "active" : ""}`}
+            >
+              <Icon name={n.icon} size={20} />
+              {n.label}
+              {n.href === "/rfqs" && (
+                <span className="nav-count">
+                  {data.rfqs.filter((r) => r.status === "New").length}
+                </span>
+              )}
+            </Link>
+          ))}
+        </nav>
+        <div className="sidebar-bottom">
+          <div className="prototype-note">
+            <span className="tiny-dot" />
+            DEMO WORKSPACE<p>Good things start at the source.</p>
+          </div>
+          <div className="admin-identity">
+            <div className="avatar">AC</div>
+            <div>
+              <strong>Alex Cruz</strong>
+              <span>Administrator</span>
+            </div>
+            <button
+              title="Log out"
+              aria-label="Log out of demo"
+              onClick={() => {
+                logout();
+                router.replace("/login");
+              }}
+            >
+              <Icon name="logout" size={18} />
+            </button>
+          </div>
+        </div>
+      </aside>
+      <div className="workspace">
+        <header className="topbar">
+          <div className="breadcrumb">
+            <button
+              className="mobile-menu"
+              onClick={() => setMobile(true)}
+              aria-label="Open navigation"
+              aria-expanded={mobile}
+              aria-controls="workspace-sidebar"
+            >
+              <Icon name="menu" />
+            </button>
+            <span>Workspace</span>
+            <Icon name="chevron" size={13} />
+            <strong>{active.label}</strong>
+          </div>
+          <div className="topbar-actions">
+            <div className="global-search">
+              <Icon name="search" size={17} />
+              <input
+                ref={searchRef}
+                aria-label="Search workspace"
+                placeholder="Search workspace…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <kbd>/</kbd>
+              {search && (
+                <div className="search-results">
+                  {results.length ? (
+                    results.map((r) => (
+                      <Link
+                        key={r.href + r.label}
+                        href={r.href}
+                        onClick={() => setSearch("")}
+                      >
+                        <Icon name="search" size={15} />
+                        {r.label}
+                        <Icon name="arrow" size={14} />
+                      </Link>
+                    ))
+                  ) : (
+                    <p>No matches found.</p>
+                  )}
+                </div>
+              )}
+            </div>
+            <span className="topbar-divider" />
+            <div className="notification-wrap">
+              <button
+                className="notification-button"
+                aria-expanded={notifications}
+                aria-label="View notifications"
+                onClick={() => setNotifications(!notifications)}
+              >
+                <Icon name="bell" size={21} />
+                <span />
+              </button>
+              {notifications && (
+                <div className="notification-popover">
+                  <div>
+                    <strong>Your updates</strong>
+                    <span>Demo activity</span>
+                  </div>
+                  <Link
+                    href="/rfqs/RFQ-2026-001"
+                    onClick={() => setNotifications(false)}
+                  >
+                    <span className="notification-symbol">
+                      <Icon name="inbox" size={18} />
+                    </span>
+                    <span>
+                      <strong>A fresh request is here</strong>
+                      <small>Maia Reyes requested 5 kg dried squid.</small>
+                      <em>Today · Sample notification</em>
+                    </span>
+                  </Link>
+                  <Link
+                    href="/orders/ORD-2026-001"
+                    onClick={() => setNotifications(false)}
+                  >
+                    <span className="notification-symbol coral">
+                      <Icon name="bag" size={18} />
+                    </span>
+                    <span>
+                      <strong>An order needs packing</strong>
+                      <small>Sofia’s order is scheduled for Nov 17.</small>
+                      <em>Demo reminder</em>
+                    </span>
+                  </Link>
+                </div>
+              )}
+            </div>
+            <div className="top-avatar">AC</div>
+          </div>
+        </header>
+        <main className="main-content">{children}</main>
+        <footer className="workspace-footer">
+          <span>Fresh from the island. Managed with care.</span>
+          <span>
+            <span className="tiny-dot" /> Prototype · All data is sample data
+          </span>
+        </footer>
+      </div>
+    </div>
+  );
+}
