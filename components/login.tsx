@@ -20,7 +20,7 @@ export function Login() {
             to the source.
           </h1>
           <p>
-            Welcome to your Bantayan Seafoods workspace.
+            Welcome to your IslaSource Seafoods workspace.
             <br />
             Good catch. Clear quotes. Happy customers.
           </p>

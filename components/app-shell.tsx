@@ -21,7 +21,7 @@ export function Brand() {
         <Icon name="fish" size={29} />
       </div>
       <div>
-        Bantayan<span>SEAFOODS</span>
+        IslaSource<span>SEAFOODS</span>
       </div>
     </div>
   );
@@ -108,7 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         <Link
           href="/"
-          aria-label="Bantayan Seafoods overview"
+          aria-label="IslaSource Seafoods overview"
           onClick={closeNav}
         >
           <Brand />

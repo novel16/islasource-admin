@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { initialData, type DemoData } from "@/lib/data";
+import { initialData, migrateDemoBrand, type DemoData } from "@/lib/data";
 import { Icon } from "./ui/icon";
 
 type DemoContext = {
@@ -31,8 +31,12 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (parsed.products && parsed.rfqs && parsed.settings)
-            setData(parsed);
+          if (
+            Array.isArray(parsed.products) &&
+            Array.isArray(parsed.rfqs) &&
+            parsed.settings
+          )
+            setData(migrateDemoBrand(parsed));
         }
         setAuthenticated(
           sessionStorage.getItem("bantayan-demo-entered") === "true",

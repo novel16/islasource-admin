@@ -1,4 +1,4 @@
-# Bantayan Seafoods admin prototype
+# IslaSource Seafoods admin prototype
 
 Standalone Next.js 16.4.6 / React 19 admin workspace. It uses local sample data and browser storage; it does not call Laravel or a payment provider. DM Sans and DM Serif Display are supplied locally. No remote font request is required to build.
 
@@ -7,7 +7,7 @@ npm install
 npm run dev -- --port 3001
 ```
 
-Open http://localhost:3001/login and choose **Enter demo workspace**. The demo gate records a sessionStorage boolean and collects no credentials. It is a UI demonstration, not authentication or production access control. Logout clears that flag. Saved edits use localStorage and survive navigation/reloads in this browser.
+Open http://localhost:3001/login and choose **Enter demo workspace**. The demo gate records a sessionStorage boolean and collects no credentials. It is a UI demonstration, not authentication or production access control. Logout clears that flag. Saved edits use localStorage and survive navigation/reloads in this browser. Existing stored business-name and product SEO defaults are upgraded to IslaSource without clearing requests, quotes, orders, or custom edits. Contact and search-preview domains ending in `.example` are prototype placeholders.
 
 ## Routes and actions
 

@@ -8,7 +8,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Bantayan Seafoods — admin
+# IslaSource Seafoods — admin
 
 ## Required workflow
 - Use the installed **Ponytail** skill for all coding, refactoring, dependency choices, and reviews. Read its current `SKILL.md`; reuse existing code/dependencies and prefer native features over unnecessary libraries.
@@ -17,6 +17,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Preserve existing user changes. Run the app's lint/build checks and relevant interaction checks before claiming completion.
 
 ## Scope and architecture
+- The brand is **IslaSource Seafoods**, a seafood sourcing and resale business based in Bantayan Island. Use the brand consistently in the workspace, quotation previews, and SEO defaults. Preserve existing demo data when updating old branding.
 - This is a standalone Next.js admin app. `../frontend` is the public guest storefront; `../api` is Laravel. Keep the three-folder architecture.
 - Only admin requires authentication. Future API authentication is **Sanctum bearer tokens**, without cookie/session-based login. Never put provider secrets in this app or `NEXT_PUBLIC_*` variables.
 - Prototype auth is an explicitly labeled demo gate, not real authorization. Production access control belongs in Laravel policies in addition to UI route handling.

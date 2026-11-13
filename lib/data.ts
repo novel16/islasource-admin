@@ -99,7 +99,7 @@ const product = (
   specs:
     "Sourced on request from Bantayan Island, Cebu. Grade, packing and availability confirmed in your quotation.",
   slug: name.toLowerCase().replaceAll(" ", "-"),
-  meta_title: `${name} | Bantayan Seafoods`,
+  meta_title: `${name} | IslaSource Seafoods`,
   meta_description: description,
   og_title: name,
   og_description: description,
@@ -377,14 +377,38 @@ export const initialData: DemoData = {
     },
   ],
   settings: {
-    business: "Bantayan Seafoods",
-    email: "hello@bantayanseafoods.com",
+    business: "IslaSource Seafoods",
+    email: "hello@islasource.example",
     phone: "+63 917 555 0100",
     address: "Bantayan Island, Cebu, Philippines",
     validity: 2,
     deposit: 50,
   },
 };
+
+export function migrateDemoBrand(data: DemoData): DemoData {
+  const rename = (value: string) =>
+    value.replaceAll("Bantayan Seafoods", "IslaSource Seafoods");
+  return {
+    ...data,
+    settings: {
+      ...data.settings,
+      business: rename(data.settings.business),
+      email:
+        data.settings.email === "hello@bantayanseafoods.com"
+          ? initialData.settings.email
+          : data.settings.email,
+    },
+    products: data.products.map((product) => ({
+      ...product,
+      description: rename(product.description),
+      meta_title: rename(product.meta_title),
+      meta_description: rename(product.meta_description),
+      og_title: rename(product.og_title),
+      og_description: rename(product.og_description),
+    })),
+  };
+}
 
 export function calculateQuote(
   q: Pick<

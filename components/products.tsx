@@ -422,7 +422,7 @@ function ProductEditor({ initial }: { initial: Product }) {
           >
             <div className="search-preview">
               <div className="preview-url">
-                bantayanseafoods.com › seafood › {p.slug || "your-product"}
+                islasource.example › seafood › {p.slug || "your-product"}
               </div>
               <h3>{p.meta_title || p.name || "Your product title"}</h3>
               <p>
@@ -433,7 +433,7 @@ function ProductEditor({ initial }: { initial: Product }) {
           </Card>
           <Card title="Social sharing preview">
             <div className="search-preview">
-              <span className="preview-url">BANTAYAN SEAFOODS</span>
+              <span className="preview-url">ISLASOURCE SEAFOODS</span>
               <h3>
                 {p.og_title ||
                   p.meta_title ||

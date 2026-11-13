@@ -494,7 +494,7 @@ function QuotationEditor({ initial }: { initial: Quote }) {
           <div className="customer-preview">
             <div className="preview-brand">
               <Icon name="fish" size={30} />
-              <strong>Bantayan Seafoods</strong>
+              <strong>IslaSource Seafoods</strong>
               <span>FROM OUR SHORES TO YOURS</span>
             </div>
             <div className="preview-meta">

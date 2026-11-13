@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { calculateQuote } from "../lib/data.ts";
+import { calculateQuote, initialData, migrateDemoBrand } from "../lib/data.ts";
 
 const sample = {
   quantity: 5,
@@ -50,4 +50,37 @@ test("invalid quantities, costs and percentages are rejected", () => {
   ]) {
     assert.throws(() => calculateQuote({ ...sample, ...invalid }), RangeError);
   }
+});
+
+test("existing demo edits survive the IslaSource brand migration", () => {
+  const saved = structuredClone(initialData);
+  saved.settings.business = "Bantayan Seafoods";
+  saved.settings.email = "hello@bantayanseafoods.com";
+  saved.settings.deposit = 60;
+  saved.products[0].meta_title = "Dried squid | Bantayan Seafoods";
+  saved.products[0].description = "My edited product description.";
+  saved.rfqs[0].notes = ["Keep my supplier note."];
+
+  const migrated = migrateDemoBrand(saved);
+  assert.equal(migrated.settings.business, "IslaSource Seafoods");
+  assert.equal(migrated.settings.email, initialData.settings.email);
+  assert.equal(migrated.settings.deposit, 60);
+  assert.equal(
+    migrated.products[0].meta_title,
+    "Dried squid | IslaSource Seafoods",
+  );
+  assert.equal(
+    migrated.products[0].description,
+    "My edited product description.",
+  );
+  assert.deepEqual(migrated.rfqs, saved.rfqs);
+  assert.deepEqual(migrated.quotes, saved.quotes);
+  assert.deepEqual(migrated.orders, saved.orders);
+  assert.equal(saved.settings.business, "Bantayan Seafoods");
+
+  saved.settings.email = "my-business@example.com";
+  assert.equal(
+    migrateDemoBrand(saved).settings.email,
+    "my-business@example.com",
+  );
 });

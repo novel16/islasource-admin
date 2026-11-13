@@ -5,11 +5,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Overview · Bantayan Seafoods",
-    template: "%s · Bantayan Seafoods",
+    default: "Overview · IslaSource Seafoods",
+    template: "%s · IslaSource Seafoods",
   },
   description:
-    "Bantayan Seafoods admin prototype. Sample data, local demo actions only.",
+    "IslaSource Seafoods admin prototype. Sample data, local demo actions only.",
   robots: { index: false, follow: false },
 };
 
