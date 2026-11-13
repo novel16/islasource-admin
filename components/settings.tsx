@@ -227,7 +227,7 @@ export function Settings() {
           <div className="dialog-body">
             <p>
               This clears every saved demo edit in this browser and restores the
-              original sample records. Your demo login stays active.
+              original sample records. Your sign-in stays active.
             </p>
           </div>
           <div className="dialog-footer">

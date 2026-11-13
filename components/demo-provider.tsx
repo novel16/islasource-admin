@@ -13,9 +13,6 @@ type DemoContext = {
   data: DemoData;
   update: (change: (data: DemoData) => DemoData) => void;
   ready: boolean;
-  authenticated: boolean;
-  login: () => void;
-  logout: () => void;
   notify: (message: string) => void;
 };
 const Context = createContext<DemoContext | null>(null);
@@ -23,7 +20,6 @@ const STORAGE_KEY = "bantayan-admin-demo-v1";
 export function DemoProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState(initialData);
   const [ready, setReady] = useState(false);
-  const [authenticated, setAuthenticated] = useState(false);
   const [toast, setToast] = useState("");
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -38,9 +34,6 @@ export function DemoProvider({ children }: { children: ReactNode }) {
           )
             setData(migrateDemoBrand(parsed));
         }
-        setAuthenticated(
-          sessionStorage.getItem("bantayan-demo-entered") === "true",
-        );
       } catch {
         setToast(
           "Browser storage is unavailable. Changes will last for this visit.",
@@ -66,27 +59,12 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       return next;
     });
   }
-  function login() {
-    try {
-      sessionStorage.setItem("bantayan-demo-entered", "true");
-    } catch {}
-    setAuthenticated(true);
-  }
-  function logout() {
-    try {
-      sessionStorage.removeItem("bantayan-demo-entered");
-    } catch {}
-    setAuthenticated(false);
-  }
   return (
     <Context.Provider
       value={{
         data,
         update,
         ready,
-        authenticated,
-        login,
-        logout,
         notify: setToast,
       }}
     >

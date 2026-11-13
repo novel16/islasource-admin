@@ -1,19 +1,27 @@
-# IslaSource Seafoods admin prototype
+# IslaSource Seafoods admin
 
-Standalone Next.js 16.4.6 / React 19 admin workspace. It uses local sample data and browser storage; it does not call Laravel or a payment provider. DM Sans and DM Serif Display are supplied locally. No remote font request is required to build.
+Standalone Next.js 16.4.6 / React 19 admin workspace with Laravel Sanctum bearer authentication. Business screens still use local sample data and browser storage. DM Sans and DM Serif Display are supplied locally; no remote font request is required to build.
 
 ```powershell
 npm install
-npm run dev -- --port 3001
+npm run dev
 ```
 
-Open http://localhost:3001/login and choose **Enter demo workspace**. The demo gate records a sessionStorage boolean and collects no credentials. It is a UI demonstration, not authentication or production access control. Logout clears that flag. Saved edits use localStorage and survive navigation/reloads in this browser. Existing stored business-name and product SEO defaults are upgraded to IslaSource without clearing requests, quotes, orders, or custom edits. Contact and search-preview domains ending in `.example` are prototype placeholders.
+Start Laravel at http://127.0.0.1:8000 and create your admin with `php artisan admin:create` from the API folder. Open http://localhost:3001/login and sign in using that account. The old demo entry has been removed.
+
+`NEXT_PUBLIC_API_URL` defaults to `http://127.0.0.1:8000/api/v1`; a matching `.env.example` is supplied. To use another API endpoint, put the value in `.env.local` and restart development or rebuild production. The API's `ADMIN_APP_URL` must match the browser origin exactly (default `http://localhost:3001`). Dev and production-start scripts default to port 3001.
+
+Tokens and expiry use tab-scoped sessionStorage. Refresh verifies the saved token at `/admin/auth/me` before rendering the workspace; returning to the tab rechecks access. Invalid/expired tokens require sign-in, and logout revokes the current token and clears local auth even if the server is unreachable. A failed server logout is explained on the sign-in page. Blocked storage falls back to memory until reload. Requests use `Authorization: Bearer`, `credentials: omit`, no-store and no redirects. There are no authentication cookies, persisted passwords or localStorage tokens.
+
+The authenticated API user supplies the sidebar name and avatar. `useAuth().request<T>()` attaches the current bearer token for future protected API features and invalidates the session on 401. Permission-only 403 errors do not log out an otherwise valid session. Internal login return destinations are validated; external redirect targets are rejected.
+
+Saved business edits remain in localStorage and survive navigation/reloads. Existing business-name and product SEO defaults are upgraded to IslaSource without clearing requests, quotes, orders, or custom edits. Contact and search-preview domains ending in `.example` are prototype placeholders.
 
 ## Routes and actions
 
 | Route                                | Demo behavior                                                                                                                                        |
 | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/login`                             | Explicit demo notice and workspace entry                                                                                                             |
+| `/login`                             | Real Laravel admin sign-in, field validation feedback, pending state and auth errors                                                                 |
 | `/`                                  | Overview, request activity, attention links, latest requests                                                                                         |
 | `/rfqs` and `/rfqs/[id]`             | Search/filter requests, compare/select supplier offers, add private notes, open/prepare quote                                                        |
 | `/quotations` and `/quotations/[id]` | Search/filter quotes, calculate draft pricing, private breakdown, customer preview, simulate sending and acceptance, create draft revisions          |
@@ -26,27 +34,27 @@ The sidebar, global workspace search, notification links and mobile navigation a
 
 ## Replay the main journey
 
-1. Enter the demo and open `RFQ-2026-001` for Maia Reyes.
+1. Sign in and open `RFQ-2026-001` for Maia Reyes.
 2. Select Isla North Seafoods at ₱500/kg. The 5kg draft updates to the selected offer; sent/accepted quotations stay unchanged.
 3. Open `QT-2026-001`: ₱2,500 cost + ₱200 handling + 20% markup (₱540) = ₱3,240 subtotal. Add ₱350 delivery for **₱3,590 total**, with **₱1,795 deposit** and **₱1,795 balance**.
 4. Open the customer preview: it contains selling amounts, delivery and terms. Supplier costs, markup and internal notes are absent.
 5. Simulate sending, then simulate customer acceptance to create a sample order. Sent/accepted quotes are read-only; **Create revision** creates a separate draft.
 6. Record a demo payment and progress the order through packing, dispatch and completion. No real funds or messages move.
 7. Edit a product’s name, slug and SEO, save, and return to the list to see persisted changes. Try supplier add/edit and workspace settings.
-8. In Settings, **Reset demo workspace** restores the original browser-local sample records while keeping demo login active.
+8. In Settings, **Reset demo workspace** restores the original browser-local sample records while keeping your API sign-in active.
 
 ## Verification
 
 ```powershell
-node --test tests/quote.test.mjs
+npm test
 npm run lint
 npm run build
 ```
 
-The built-in Node test checks the exact reference quotation, fractional quantity rounding, balanced deposit/remainder, and invalid/negative/nonfinite inputs. Node 22.18+ or 24 supports the TypeScript import used by this framework-free test. Node may print a harmless module-detection warning for the imported `.ts` file.
+Built-in Node tests cover auth requests, restoration, expiry, revocation/local cleanup, stale responses, storage failures and safe return URLs, plus quotation calculations and branding migration. Node 22.18+ or 24 supports the TypeScript imports; Node may print a harmless module-detection warning. No test framework or auth dependency was added.
 
 ## Production boundary
 
-No live backend, real credentials, authentication cookies, messaging, PayMongo API calls or payment QR codes are implemented. Laravel will provide API validation and policies. Planned authentication is Sanctum bearer tokens, not cookie/session login. Live payments must be confirmed by verified, idempotent API webhooks. The current sample fixtures, storage gate and manual demo ledger are unsuitable for production data.
+Authentication uses the live Laravel API. RFQs, quotations, orders, suppliers, products, settings and the manual payment ledger remain sample features; their writes do not reach Laravel yet. Client route handling is an interface boundary; Laravel authentication and policies must protect each real API resource. Live messaging, PayMongo payments and their verified/idempotent webhooks remain separate phases.
 
 Money is represented as integer centavos, with markup consistently applied to supplier cost plus handling before delivery. Quantity and pricing inputs are validated. Quote validity defaults are copied into new drafts; changing Settings does not alter saved quotation terms. The demo is intentionally browser-local and independent of the public storefront. See `public/ASSET-CREDITS.md` for supplied asset sources.

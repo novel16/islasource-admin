@@ -1,50 +1,111 @@
 "use client";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useDemo } from "./demo-provider";
-import { Brand } from "./app-shell";
-import { Button } from "./ui";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState, type FormEvent } from "react";
+import { ApiError } from "@/lib/api";
+import { safeReturnPath } from "@/lib/auth-session";
+import { useAuth } from "./auth-provider";
+import { AuthStatus } from "./auth-status";
+import { Brand } from "./brand";
+import { Button, Field } from "./ui";
 import { Icon } from "./ui/icon";
 export function Login() {
-  const { login } = useDemo();
+  const { login, status, busy, message } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = safeReturnPath(searchParams.get("next"));
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (status === "authenticated") router.replace(returnTo);
+  }, [status, returnTo, router]);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy) return;
+    setErrors({});
+    setError("");
+    try {
+      if (await login({ email, password })) setPassword("");
+    } catch (failure) {
+      if (failure instanceof ApiError) {
+        setErrors(failure.errors);
+        setError(failure.message);
+      } else {
+        setError("We couldn’t sign you in. Please try again.");
+      }
+    }
+  }
+
+  if (status !== "anonymous") return <AuthStatus />;
   return (
     <main className="login-page">
       <section className="login-form">
         <Brand />
         <div>
-          <span className="eyebrow">THE ISLAND, AT YOUR FINGERTIPS</span>
-          <h1>
-            A little closer
-            <br />
-            to the source.
-          </h1>
+          <span className="eyebrow">YOUR ISLASOURCE WORKSPACE</span>
+          <h1>Welcome back.</h1>
           <p>
-            Welcome to your IslaSource Seafoods workspace.
+            Sign in to manage your island connections,
             <br />
-            Good catch. Clear quotes. Happy customers.
+            quote requests, and seafood orders.
           </p>
-          <div className="demo-disclosure">
-            <Icon name="leaf" size={21} />
-            <div>
-              <strong>Take a look around</strong>
-              <p>
-                This is an interactive demo with sample data. No credentials are
-                collected, and no real messages or payments are sent. The demo
-                gate is not secure authentication.
-              </p>
+          {message && (
+            <div className="auth-notice" role="status">
+              {message}
             </div>
-          </div>
-          <Button
-            onClick={() => {
-              login();
-              router.replace("/");
-            }}
-          >
-            Enter demo workspace
-            <Icon name="arrow" size={18} />
-          </Button>
-          <small>Your changes are saved in this browser.</small>
+          )}
+          <form className="auth-form" onSubmit={submit} aria-busy={busy}>
+            {error && (
+              <div className="auth-error" role="alert">
+                {error}
+              </div>
+            )}
+            <Field
+              label="Email address"
+              hint={errors.email?.[0]}
+              className={errors.email?.length ? "field-invalid" : ""}
+            >
+              <input
+                name="email"
+                type="email"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                required
+                maxLength={254}
+                value={email}
+                disabled={busy}
+                aria-invalid={Boolean(errors.email?.length)}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </Field>
+            <Field
+              label="Password"
+              hint={errors.password?.[0]}
+              className={errors.password?.length ? "field-invalid" : ""}
+            >
+              <input
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                maxLength={1024}
+                value={password}
+                disabled={busy}
+                aria-invalid={Boolean(errors.password?.length)}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </Field>
+            <Button type="submit" disabled={busy}>
+              {busy ? "Please wait…" : "Sign in"}
+              <Icon name="arrow" size={18} />
+            </Button>
+          </form>
+          <small>Access for authorized IslaSource team members.</small>
         </div>
         <span className="login-footnote">
           BANTAYAN ISLAND, CEBU · PHILIPPINES

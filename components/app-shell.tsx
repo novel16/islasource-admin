@@ -3,6 +3,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useDemo } from "./demo-provider";
+import { useAuth } from "./auth-provider";
+import { AuthStatus } from "./auth-status";
+import { Brand } from "./brand";
 import { Icon } from "./ui/icon";
 
 const navigation = [
@@ -14,30 +17,19 @@ const navigation = [
   { href: "/suppliers", label: "Suppliers", icon: "people" },
   { href: "/settings", label: "Settings", icon: "settings" },
 ];
-export function Brand() {
-  return (
-    <div className="brand">
-      <div className="brand-mark">
-        <Icon name="fish" size={29} />
-      </div>
-      <div>
-        IslaSource<span>SEAFOODS</span>
-      </div>
-    </div>
-  );
-}
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { ready, authenticated, logout, data } = useDemo();
+  const { ready, data } = useDemo();
+  const { status, user, logout } = useAuth();
   const [mobile, setMobile] = useState(false);
   const [notifications, setNotifications] = useState(false);
   const [search, setSearch] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (ready && !authenticated && pathname !== "/login")
-      router.replace("/login");
-  }, [ready, authenticated, pathname, router]);
+    if (status === "anonymous" && pathname !== "/login")
+      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+  }, [status, pathname, router]);
   useEffect(() => {
     function handleKey(event: KeyboardEvent) {
       const target = event.target;
@@ -59,13 +51,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener("keydown", handleKey);
   }, []);
   if (pathname === "/login") return children;
-  if (!ready || !authenticated)
-    return (
-      <div className="workspace-loading">
-        <Brand />
-        <p>Opening your demo workspace…</p>
-      </div>
-    );
+  if (!ready || status !== "authenticated") return <AuthStatus />;
+  const initials =
+    user?.name
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => Array.from(part)[0])
+      .join("")
+      .toUpperCase() || "A";
   const active =
     navigation.find((n) =>
       n.href === "/" ? pathname === "/" : pathname.startsWith(n.href),
@@ -136,21 +130,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="sidebar-bottom">
           <div className="prototype-note">
             <span className="tiny-dot" />
-            DEMO WORKSPACE<p>Good things start at the source.</p>
+            SAMPLE BUSINESS DATA<p>Good things start at the source.</p>
           </div>
           <div className="admin-identity">
-            <div className="avatar">AC</div>
+            <div className="avatar">{initials}</div>
             <div>
-              <strong>Alex Cruz</strong>
+              <strong>{user?.name}</strong>
               <span>Administrator</span>
             </div>
             <button
               title="Log out"
-              aria-label="Log out of demo"
-              onClick={() => {
-                logout();
-                router.replace("/login");
-              }}
+              aria-label="Log out"
+              onClick={() => void logout()}
             >
               <Icon name="logout" size={18} />
             </button>
@@ -250,14 +241,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
               )}
             </div>
-            <div className="top-avatar">AC</div>
+            <div className="top-avatar" title={user?.name}>
+              {initials}
+            </div>
           </div>
         </header>
         <main className="main-content">{children}</main>
         <footer className="workspace-footer">
           <span>Fresh from the island. Managed with care.</span>
           <span>
-            <span className="tiny-dot" /> Prototype · All data is sample data
+            <span className="tiny-dot" /> Prototype · Sample business records
           </span>
         </footer>
       </div>

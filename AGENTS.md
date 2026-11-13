@@ -19,8 +19,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## Scope and architecture
 - The brand is **IslaSource Seafoods**, a seafood sourcing and resale business based in Bantayan Island. Use the brand consistently in the workspace, quotation previews, and SEO defaults. Preserve existing demo data when updating old branding.
 - This is a standalone Next.js admin app. `../frontend` is the public guest storefront; `../api` is Laravel. Keep the three-folder architecture.
-- Only admin requires authentication. Future API authentication is **Sanctum bearer tokens**, without cookie/session-based login. Never put provider secrets in this app or `NEXT_PUBLIC_*` variables.
-- Prototype auth is an explicitly labeled demo gate, not real authorization. Production access control belongs in Laravel policies in addition to UI route handling.
+- Only admin requires authentication. Use the implemented **Sanctum bearer API**, without cookie/session-based login. Never put provider secrets in this app or `NEXT_PUBLIC_*` variables.
+- Authentication is separate from the sample business data. Keep native fetch with `credentials: omit`, verify stored tokens with `/me` before restored access, revoke tokens on logout, and handle expiry/401 centrally. Never trust a browser boolean or stored profile as authentication. Laravel policies enforce access to real resources; client route handling controls the interface.
+- Keep bearer tokens and expiry tab-scoped in sessionStorage, with an in-memory fallback when storage is unavailable. Never persist passwords or put tokens in localStorage, URLs, logs, Server Component props, or cookies. Do not reintroduce the old demo-entry bypass.
 - Manage RFQs, supplier sourcing, quote revisions, accepted orders, payments, products, suppliers, and SEO settings. Supplier accounts and marketplace commissions are out of scope.
 - Supplier costs, markup, and internal notes are admin-only. Customer quotation previews show only agreed selling prices and customer-facing terms.
 - Use integer centavos for money. Distinguish markup from margin and show cost, markup, delivery, total, deposit, and balance clearly.
