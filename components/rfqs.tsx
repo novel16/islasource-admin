@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDemo } from "./demo-provider";
 import {
   BackLink,
@@ -17,6 +17,121 @@ import {
 } from "./ui";
 import { Icon } from "./ui/icon";
 import { money, shortDate, type Quote } from "@/lib/data";
+import { rfqListPath, type ApiRfq, type ApiRfqPage } from "@/lib/rfqs";
+import { useApiResource } from "./use-api-resource";
+
+function LiveRfqInbox() {
+  const [query, setQuery] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(query);
+      setPage(1);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+  const path = rfqListPath({ per_page: 50, search, page });
+  const { data, error, loading, retry } = useApiResource<ApiRfqPage>(path);
+  const rows = data?.data ?? [];
+
+  return (
+    <section className="live-rfq-inbox">
+      <PageHeader
+        eyebrow="LIVE CUSTOMER REQUESTS"
+        title="Guest quote inbox"
+        description="Requests submitted from the public seafood catalog. Customer contact details are visible only to signed-in admins."
+        actions={<div className="count-label">{data?.meta.total ?? (loading ? "Loading…" : 0)} live requests</div>}
+      />
+      <Card>
+        <div className="list-toolbar">
+          <div className="search-input">
+            <Icon name="search" size={18} />
+            <input
+              aria-label="Search live quote requests"
+              placeholder="Search reference, customer, email, or seafood…"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            {query && (
+              <button aria-label="Clear search" onClick={() => setQuery("")}>
+                <Icon name="close" size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+        {loading ? (
+          <p className="loading-text">Loading live requests…</p>
+        ) : error ? (
+          <div className="empty-state">
+            <Icon name="inbox" size={30} />
+            <h3>Couldn’t load live requests</h3>
+            <p>{error.message}</p>
+            <Button variant="secondary" onClick={retry}>Try again</Button>
+          </div>
+        ) : rows.length ? (
+          <DataTable headers={["Reference", "Customer", "Requested seafood", "Delivery", "Status", ""]}>
+            {rows.map((rfq) => (
+              <tr key={rfq.id}>
+                <td>
+                  <Link className="table-primary" href={`/rfqs/${rfq.id}`}>{rfq.reference}</Link>
+                  <small>{new Date(rfq.created_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}</small>
+                </td>
+                <td>
+                  <strong>{rfq.customer_name}</strong>
+                  <small>{rfq.email}</small>
+                </td>
+                <td>
+                  {rfq.items.map((item) => item.name).join(", ")}
+                  <small>{rfq.items.length} {rfq.items.length === 1 ? "line item" : "line items"}</small>
+                </td>
+                <td>
+                  {rfq.location}
+                  <small>{rfq.requested_delivery_date ? shortDate(rfq.requested_delivery_date) : "Date not specified"}</small>
+                </td>
+                <td><Badge>{rfq.status}</Badge></td>
+                <td>
+                  <Link className="text-link" href={`/rfqs/${rfq.id}`}>
+                    Review <Icon name="arrow" size={15} />
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </DataTable>
+        ) : (
+          <EmptyState
+            title={query ? "No matching live requests" : "No guest requests yet"}
+            description={query ? "Try another search." : "New requests from the public website will appear here."}
+          />
+        )}
+        <div className="table-footer">
+          <span>
+            Showing {data?.meta.from ?? 0}–{data?.meta.to ?? 0} of {data?.meta.total ?? 0} live requests
+          </span>
+          <div className="pagination-controls">
+            <Button
+              variant="ghost"
+              disabled={!data || page <= 1}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+            >
+              Previous
+            </Button>
+            <span>Page {data?.meta.current_page ?? page} of {data?.meta.last_page ?? 1}</span>
+            <Button
+              variant="ghost"
+              disabled={!data || page >= data.meta.last_page}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              Next
+            </Button>
+          </div>
+          <span>Live API data</span>
+        </div>
+      </Card>
+    </section>
+  );
+}
+
 export function RfqList() {
   const { data } = useDemo();
   const [query, setQuery] = useState("");
@@ -30,10 +145,11 @@ export function RfqList() {
   );
   return (
     <>
+      <LiveRfqInbox />
       <PageHeader
         eyebrow="CUSTOMER CONVERSATIONS"
-        title="Quote requests"
-        description="Every good order starts with a conversation."
+        title="Prototype request examples"
+        description="Sample workspace records for the existing sourcing and quotation prototype. Live guest submissions are listed above."
         actions={
           <div className="count-label">
             <span className="tiny-dot" />
@@ -133,6 +249,7 @@ export function RfqDetail({ id }: { id: string }) {
   const { data, update, notify } = useDemo();
   const router = useRouter();
   const [note, setNote] = useState("");
+  if (/^\d+$/.test(id)) return <LiveRfqDetail id={Number(id)} />;
   const r = data.rfqs.find((x) => x.id === id);
   if (!r)
     return (
@@ -407,6 +524,96 @@ export function RfqDetail({ id }: { id: string }) {
               customer sees only the final quotation.
             </p>
           </div>
+        </aside>
+      </div>
+    </>
+  );
+}
+
+function LiveRfqDetail({ id }: { id: number }) {
+  const { data, error, loading, retry } = useApiResource<{ data: ApiRfq }>(
+    `/admin/rfqs/${id}`,
+  );
+  const rfq = data?.data;
+
+  if (loading) {
+    return (
+      <>
+        <BackLink href="/rfqs">All quote requests</BackLink>
+        <p className="loading-text">Loading guest request…</p>
+      </>
+    );
+  }
+  if (error || !rfq) {
+    return (
+      <>
+        <BackLink href="/rfqs">All quote requests</BackLink>
+        <PageHeader
+          title="Couldn’t open request"
+          description={error?.message ?? "This request could not be found."}
+          actions={<Button variant="secondary" onClick={retry}>Try again</Button>}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <BackLink href="/rfqs">All quote requests</BackLink>
+      <PageHeader
+        eyebrow="LIVE GUEST REQUEST"
+        title={rfq.reference}
+        description={`Received ${new Date(rfq.created_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}`}
+        actions={<Badge>{rfq.status}</Badge>}
+      />
+      <div className="detail-grid">
+        <div className="detail-main">
+          <Card title="Requested seafood" subtitle="Customer selections and preferences">
+            <div className="requested-products-list">
+              {rfq.items.map((item) => (
+                <article className="requested-product" key={item.id}>
+                  <div className="customer-avatar"><Icon name="fish" size={20} /></div>
+                  <div>
+                    <strong>{item.name}</strong>
+                    <p>{item.product_id === null ? "Custom request" : "Catalog item"}</p>
+                    <span className="quantity-pill">{item.quantity} {item.unit} requested</span>
+                    {item.notes && <p>{item.notes}</p>}
+                  </div>
+                </article>
+              ))}
+            </div>
+            {rfq.notes && (
+              <div className="customer-note">
+                <span className="eyebrow">CUSTOMER’S NOTE</span>
+                <p>{rfq.notes}</p>
+              </div>
+            )}
+          </Card>
+          <Card title="Next step" subtitle="The quote and supplier sourcing workflow will be connected in a later phase.">
+            <p className="muted">This request is saved and ready for your team to review. No supplier price, markup, or payment information is attached.</p>
+          </Card>
+        </div>
+        <aside className="detail-aside">
+          <Card title="Customer details">
+            <div className="customer-profile">
+              <div className="customer-avatar">
+                {rfq.customer_name.split(" ").map((part) => part[0]).slice(0, 2).join("")}
+              </div>
+              <strong>{rfq.customer_name}</strong>
+              <span>Guest customer</span>
+            </div>
+            <dl className="detail-lines">
+              <div><dt><Icon name="mail" size={16} /> Email</dt><dd>{rfq.email}</dd></div>
+              <div><dt>Phone</dt><dd>{rfq.phone}</dd></div>
+            </dl>
+          </Card>
+          <Card title="Delivery details">
+            <dl className="detail-lines">
+              <div><dt><Icon name="location" size={16} /> Deliver to</dt><dd>{rfq.location}</dd></div>
+              <div><dt><Icon name="clock" size={16} /> Requested date</dt><dd>{rfq.requested_delivery_date ? shortDate(rfq.requested_delivery_date) : "Not specified"}</dd></div>
+            </dl>
+            <div className="soft-note">Confirm delivery timing and supplier availability before preparing a quote.</div>
+          </Card>
         </aside>
       </div>
     </>

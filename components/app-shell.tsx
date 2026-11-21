@@ -12,6 +12,7 @@ import {
   workspaceSearchResults,
   type ProductPage,
 } from "@/lib/products";
+import { rfqListPath, type ApiRfqPage } from "@/lib/rfqs";
 import { useApiResource } from "./use-api-resource";
 
 const navigation = [
@@ -41,6 +42,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     status === "authenticated" && catalogQuery.trim().length >= 2
       ? productListPath({ search: catalogQuery, per_page: 5 })
       : null,
+  );
+  const rfqSearch = useApiResource<ApiRfqPage>(
+    status === "authenticated" && catalogQuery.trim().length >= 2
+      ? rfqListPath({ search: catalogQuery, per_page: 5 })
+      : null,
+  );
+  const rfqCount = useApiResource<ApiRfqPage>(
+    status === "authenticated" ? rfqListPath({ per_page: 1 }) : null,
   );
   useEffect(() => {
     if (status === "anonymous" && pathname !== "/login")
@@ -86,6 +95,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         label: `${r.id} · ${r.customer}`,
         href: `/rfqs/${r.id}`,
       })),
+      ...(catalogQuery.trim() === search.trim()
+        ? (rfqSearch.data?.data ?? []).map((rfq) => ({
+            label: `${rfq.reference} · ${rfq.customer_name} · ${rfq.email} · ${rfq.items.map((item) => item.name).join(", ")}`,
+            href: `/rfqs/${rfq.id}`,
+          }))
+        : []),
       ...data.quotes.map((q) => ({
         label: `${q.id} · ${data.rfqs.find((r) => r.id === q.rfqId)?.customer ?? "Quotation"}`,
         href: `/quotations/${q.id}`,
@@ -136,9 +151,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               <Icon name={n.icon} size={20} />
               {n.label}
-              {n.href === "/rfqs" && (
+              {n.href === "/rfqs" && Boolean(rfqCount.data?.meta.total) && (
                 <span className="nav-count">
-                  {data.rfqs.filter((r) => r.status === "New").length}
+                  {rfqCount.data?.meta.total}
                 </span>
               )}
             </Link>
