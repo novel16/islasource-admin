@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { Icon } from "./icon";
+import { handleDialogCancel } from "@/lib/dialog";
 
 export function Button({
   children,
@@ -195,14 +196,19 @@ export function Dialog({
       ref={ref}
       className="dialog"
       aria-labelledby={id}
-      onCancel={onClose}
+      onCancel={(event) => handleDialogCancel(event, onClose)}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div className="dialog-header">
         <h2 id={id}>{title}</h2>
-        <Button variant="ghost" onClick={onClose} aria-label="Close dialog">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onClose}
+          aria-label="Close dialog"
+        >
           <Icon name="close" />
         </Button>
       </div>

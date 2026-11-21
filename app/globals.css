@@ -2151,6 +2151,123 @@ td .table-primary {
   display: grid;
   gap: 20px;
 }
+
+.product-fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.product-fieldset:disabled {
+  opacity: 0.85;
+}
+.product-fieldset .field > label {
+  color: #52634a;
+}
+.product-fieldset .field input,
+.product-fieldset .field textarea,
+.product-fieldset .field select {
+  color: #465c3e;
+}
+.product-fieldset .field-invalid > small {
+  color: #9b3434;
+}
+.product-fieldset [aria-invalid="true"] {
+  border-color: #b64a40;
+}
+.product-list-options {
+  padding: 0 25px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+}
+.product-list-options > label:first-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.product-list-options select {
+  min-width: 135px;
+  font-size: 12px;
+}
+.product-list-options .checkbox-label {
+  padding: 0;
+  margin: 0;
+}
+.product-row-actions,
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.product-row-actions .button,
+.pagination-controls .button {
+  min-height: 32px;
+  padding: 7px 10px;
+  font-size: 11px;
+}
+.catalog-feedback {
+  padding: 32px 25px;
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+  font-size: 13px;
+  color: #52634a;
+}
+.product-upload,
+.product-image-alt,
+.product-sharing-actions {
+  padding: 18px 25px;
+}
+.product-upload {
+  border-top: 1px solid var(--line);
+}
+.product-upload input[type="file"] {
+  width: 100%;
+  min-width: 0;
+  font-size: 11px;
+}
+.product-upload .form-error {
+  margin: 12px 0 0;
+}
+.product-image-alt {
+  padding-top: 0;
+}
+.product-sharing-image {
+  padding: 20px 25px 0;
+}
+.product-sharing-image img {
+  width: 100%;
+  height: auto;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.product-slug-history {
+  padding: 18px 25px;
+  font-size: 11px;
+  line-height: 1.8;
+  border-top: 1px solid var(--line);
+}
+.product-slug-history p,
+.product-fieldset .preview-url {
+  overflow-wrap: anywhere;
+}
+.product-save-footer {
+  margin-top: 24px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.status-archived {
+  background: #edf0e9;
+  color: #68775e;
+}
 .status-explanation {
   font-size: 10px;
   padding: 13px 16px;

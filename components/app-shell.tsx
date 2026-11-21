@@ -7,6 +7,12 @@ import { useAuth } from "./auth-provider";
 import { AuthStatus } from "./auth-status";
 import { Brand } from "./brand";
 import { Icon } from "./ui/icon";
+import {
+  productListPath,
+  workspaceSearchResults,
+  type ProductPage,
+} from "@/lib/products";
+import { useApiResource } from "./use-api-resource";
 
 const navigation = [
   { href: "/", label: "Overview", icon: "grid" },
@@ -25,7 +31,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobile, setMobile] = useState(false);
   const [notifications, setNotifications] = useState(false);
   const [search, setSearch] = useState("");
+  const [catalogQuery, setCatalogQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const timer = setTimeout(() => setCatalogQuery(search), 250);
+    return () => clearTimeout(timer);
+  }, [search]);
+  const catalogSearch = useApiResource<ProductPage>(
+    status === "authenticated" && catalogQuery.trim().length >= 2
+      ? productListPath({ search: catalogQuery, per_page: 5 })
+      : null,
+  );
   useEffect(() => {
     if (status === "anonymous" && pathname !== "/login")
       router.replace(`/login?next=${encodeURIComponent(pathname)}`);
@@ -64,24 +80,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     navigation.find((n) =>
       n.href === "/" ? pathname === "/" : pathname.startsWith(n.href),
     ) || navigation[0];
-  const results = [
-    ...data.rfqs.map((r) => ({
-      label: `${r.id} · ${r.customer}`,
-      href: `/rfqs/${r.id}`,
-    })),
-    ...data.products.map((p) => ({ label: p.name, href: `/products/${p.id}` })),
-    ...data.quotes.map((q) => ({
-      label: `${q.id} · ${data.rfqs.find((r) => r.id === q.rfqId)?.customer ?? "Quotation"}`,
-      href: `/quotations/${q.id}`,
-    })),
-    ...data.orders.map((o) => ({
-      label: `${o.id} · ${o.customer}`,
-      href: `/orders/${o.id}`,
-    })),
-    ...navigation.map((n) => ({ label: n.label, href: n.href })),
-  ]
-    .filter((r) => r.label.toLowerCase().includes(search.toLowerCase()))
-    .slice(0, 6);
+  const results = workspaceSearchResults(
+    [
+      ...data.rfqs.map((r) => ({
+        label: `${r.id} · ${r.customer}`,
+        href: `/rfqs/${r.id}`,
+      })),
+      ...data.quotes.map((q) => ({
+        label: `${q.id} · ${data.rfqs.find((r) => r.id === q.rfqId)?.customer ?? "Quotation"}`,
+        href: `/quotations/${q.id}`,
+      })),
+      ...data.orders.map((o) => ({
+        label: `${o.id} · ${o.customer}`,
+        href: `/orders/${o.id}`,
+      })),
+      ...navigation.map((n) => ({ label: n.label, href: n.href })),
+    ],
+    catalogQuery.trim() === search.trim() ? catalogSearch.data?.data ?? [] : [],
+    search,
+  );
   function closeNav() {
     setMobile(false);
     setSearch("");
@@ -130,7 +147,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="sidebar-bottom">
           <div className="prototype-note">
             <span className="tiny-dot" />
-            SAMPLE BUSINESS DATA<p>Good things start at the source.</p>
+            {pathname.startsWith("/products")
+              ? "PRODUCT CATALOG"
+              : "SAMPLE BUSINESS DATA"}
+            <p>Good things start at the source.</p>
           </div>
           <div className="admin-identity">
             <div className="avatar">{initials}</div>
@@ -172,6 +192,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 aria-label="Search workspace"
                 placeholder="Search workspace…"
                 value={search}
+                maxLength={100}
                 onChange={(e) => setSearch(e.target.value)}
               />
               <kbd>/</kbd>
@@ -250,7 +271,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <footer className="workspace-footer">
           <span>Fresh from the island. Managed with care.</span>
           <span>
-            <span className="tiny-dot" /> Prototype · Sample business records
+            <span className="tiny-dot" />{" "}
+            {pathname.startsWith("/products")
+              ? "Catalog · Saved product records"
+              : "Prototype · Sample business records"}
           </span>
         </footer>
       </div>
