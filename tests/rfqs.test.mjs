@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ApiError } from "../lib/api.ts";
-import { initialData } from "../lib/data.ts";
 import {
   createRfqsClient,
   rfqListPath,
@@ -88,12 +87,4 @@ test("RFQ client rejects empty or oversized notes before calling the API", async
     return true;
   });
   assert.equal(called, false);
-});
-
-test("demo workspace data no longer carries supplier directory or supplier offer fields", () => {
-  assert.equal("suppliers" in initialData, false);
-  for (const rfq of initialData.rfqs) {
-    assert.equal("offers" in rfq, false);
-    assert.equal("selectedSupplier" in rfq, false);
-  }
 });

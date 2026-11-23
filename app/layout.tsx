@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DemoProvider } from "@/components/demo-provider";
+import { WorkspaceProvider } from "@/components/workspace-provider";
 import { AppShell } from "@/components/app-shell";
 import { AuthProvider } from "@/components/auth-provider";
 import "./globals.css";
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     template: "%s · IslaSource Seafoods",
   },
   description:
-    "IslaSource Seafoods admin workspace. Authorized team access with sample business records.",
+    "IslaSource Seafoods admin workspace for catalog, quote requests, and customer quotations.",
   robots: { index: false, follow: false },
 };
 
@@ -19,9 +19,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" data-scroll-behavior="smooth">
       <body>
         <AuthProvider>
-          <DemoProvider>
+          <WorkspaceProvider>
             <AppShell>{children}</AppShell>
-          </DemoProvider>
+          </WorkspaceProvider>
         </AuthProvider>
       </body>
     </html>

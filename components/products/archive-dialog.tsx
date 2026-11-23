@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createProductsClient, type CatalogProduct } from "@/lib/products";
 import { useAuth } from "../auth-provider";
-import { useDemo } from "../demo-provider";
+import { useWorkspace } from "../workspace-provider";
 import { Button, Dialog } from "../ui";
 
 export function ArchiveProductDialog({
@@ -16,7 +16,7 @@ export function ArchiveProductDialog({
   onArchived: () => void;
 }) {
   const { request } = useAuth();
-  const { notify } = useDemo();
+  const { notify } = useWorkspace();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   return (

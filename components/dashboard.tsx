@@ -1,18 +1,58 @@
 "use client";
+
 import Link from "next/link";
-import { useDemo } from "./demo-provider";
-import { Badge, ButtonLink, Card, DataTable, PageHeader } from "./ui";
-import { Icon } from "./ui/icon";
 import { money } from "@/lib/data";
+import { productListPath, type ProductPage } from "@/lib/products";
+import { quotationListPath, type ApiQuotationPage } from "@/lib/quotations";
+import { rfqListPath, type ApiRfqPage } from "@/lib/rfqs";
+import { useAuth } from "./auth-provider";
+import { Badge, ButtonLink, Card, DataTable, EmptyState, PageHeader } from "./ui";
+import { Icon } from "./ui/icon";
+import { useApiResource } from "./use-api-resource";
+
 export function Dashboard() {
-  const { data } = useDemo();
-  const revenue = data.orders.reduce((sum, o) => sum + o.paid, 0);
+  const { user } = useAuth();
+  const firstName = user?.name?.trim().split(/\s+/)[0] || "Admin";
+  const todayLabel = new Date()
+    .toLocaleDateString("en-PH", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
+    .toUpperCase();
+
+  const recentRfqs = useApiResource<ApiRfqPage>(rfqListPath({ per_page: 5 }));
+  const newRfqs = useApiResource<ApiRfqPage>(
+    rfqListPath({ status: "New", per_page: 3 }),
+  );
+  const sentQuotes = useApiResource<ApiQuotationPage>(
+    quotationListPath({ status: "Sent", per_page: 3 }),
+  );
+  const acceptedQuotes = useApiResource<ApiQuotationPage>(
+    quotationListPath({ status: "Accepted", per_page: 1 }),
+  );
+  const publishedProducts = useApiResource<ProductPage>(
+    productListPath({ status: "Published", per_page: 1 }),
+  );
+
+  const totalRfqs = recentRfqs.data?.meta.total ?? 0;
+  const newRfqCount = newRfqs.data?.meta.total ?? 0;
+  const sentQuoteCount = sentQuotes.data?.meta.total ?? 0;
+  const acceptedQuoteCount = acceptedQuotes.data?.meta.total ?? 0;
+  const publishedProductCount = publishedProducts.data?.meta.total ?? 0;
+
+  const firstNewRfq = newRfqs.data?.data[0];
+  const latestRows = recentRfqs.data?.data ?? [];
+  const attentionRfqs = newRfqs.data?.data ?? [];
+  const attentionQuotes = sentQuotes.data?.data ?? [];
+
   return (
     <>
       <PageHeader
-        eyebrow="FRIDAY, NOVEMBER 13, 2026"
-        title="A fresh start, Alex."
-        description="Here’s what’s happening with your island business today."
+        eyebrow={todayLabel}
+        title={`Welcome back, ${firstName}.`}
+        description="Here’s what’s happening across your quote requests, quotations, and catalog."
         actions={
           <ButtonLink href="/rfqs">
             <Icon name="inbox" size={17} />
@@ -28,13 +68,15 @@ export function Dashboard() {
         <p>
           <strong>A good day for a good catch.</strong>
           <span>
-            You have {data.rfqs.filter((r) => r.status === "New").length} new
-            request ready for your attention. Let’s turn it into something
-            great.
+            {newRfqCount > 0
+              ? `You have ${newRfqCount} new quote ${newRfqCount === 1 ? "request" : "requests"} ready for sourcing.`
+              : sentQuoteCount > 0
+                ? `${sentQuoteCount} sent ${sentQuoteCount === 1 ? "quotation is" : "quotations are"} awaiting customer confirmation.`
+                : "Your quote inbox is up to date. New guest requests will appear here automatically."}
           </span>
         </p>
-        <Link href="/rfqs/RFQ-2026-001">
-          Review request
+        <Link href={firstNewRfq ? `/rfqs/${firstNewRfq.id}` : "/rfqs"}>
+          {firstNewRfq ? "Review request" : "Open inbox"}
           <Icon name="arrow" size={17} />
         </Link>
       </div>
@@ -42,38 +84,42 @@ export function Dashboard() {
         {[
           {
             label: "Quote requests",
-            value: String(data.rfqs.length).padStart(2, "0"),
+            value: recentRfqs.loading ? "—" : String(totalRfqs).padStart(2, "0"),
             icon: "inbox",
-            note: "1 new request today",
-            detail: "Ready for your attention",
+            note: newRfqs.loading
+              ? "Checking inbox…"
+              : `${newRfqCount} new ${newRfqCount === 1 ? "request" : "requests"}`,
+            detail: "Submitted from storefront",
             color: "mint",
           },
           {
-            label: "Open quotations",
-            value: String(
-              data.quotes.filter((q) => q.status !== "Accepted").length,
-            ).padStart(2, "0"),
+            label: "Sent quotations",
+            value: sentQuotes.loading
+              ? "—"
+              : String(sentQuoteCount).padStart(2, "0"),
             icon: "file",
-            note: "1 awaiting customer",
-            detail: "Keep the conversation going",
+            note: "Awaiting customer decision",
+            detail: "Valid for 2 days by default",
             color: "sand",
           },
           {
-            label: "Active orders",
-            value: String(
-              data.orders.filter((o) => o.status !== "Completed").length,
-            ).padStart(2, "0"),
-            icon: "bag",
-            note: "1 ready to pack",
-            detail: "A little care in every order",
+            label: "Accepted quotes",
+            value: acceptedQuotes.loading
+              ? "—"
+              : String(acceptedQuoteCount).padStart(2, "0"),
+            icon: "check",
+            note: "Confirmed by customers",
+            detail: "Ready for deposit follow-up",
             color: "blue",
           },
           {
-            label: "Payments received",
-            value: money(revenue),
-            icon: "wallet",
-            note: "Across 3 sample orders",
-            detail: "Demo payments · November",
+            label: "Published seafood",
+            value: publishedProducts.loading
+              ? "—"
+              : String(publishedProductCount).padStart(2, "0"),
+            icon: "box",
+            note: "Visible in public catalog",
+            detail: "Sourced on request",
             color: "peach",
           },
         ].map((s) => (
@@ -95,176 +141,122 @@ export function Dashboard() {
       </div>
       <div className="dashboard-middle">
         <Card
-          title="A growing island business"
-          subtitle="Quotation activity · sample data"
+          title="Fresh in your inbox"
+          subtitle="Latest guest quote requests"
           action={
-            <span className="chart-period">
-              Last 7 days
-              <Icon name="down" size={13} />
-            </span>
+            <Link className="text-link" href="/rfqs">
+              View all requests
+              <Icon name="arrow" size={15} />
+            </Link>
           }
         >
-          <div className="chart-key">
-            <span>
-              <i />
-              Requests
-            </span>
-            <span>
-              <i />
-              Quotations
-            </span>
-          </div>
-          <div className="chart">
-            <div className="chart-axis">
-              <span>12</span>
-              <span>8</span>
-              <span>4</span>
-              <span>0</span>
-            </div>
-            <div className="chart-plot">
-              <div className="chart-grid-lines">
-                <i />
-                <i />
-                <i />
-                <i />
-              </div>
-              <svg
-                viewBox="0 0 700 145"
-                preserveAspectRatio="none"
-                aria-label="Sample request activity rising from four to ten requests over seven days"
-                role="img"
-              >
-                <defs>
-                  <linearGradient id="area" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="#b9d3c4" stopOpacity=".5" />
-                    <stop offset="100%" stopColor="#b9d3c4" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M0 113 C60 113 60 76 116 76 S175 98 233 98 291 47 350 47 408 73 466 73 524 37 583 37 641 15 700 15 V145 H0Z"
-                  fill="url(#area)"
-                />
-                <path
-                  d="M0 113 C60 113 60 76 116 76 S175 98 233 98 291 47 350 47 408 73 466 73 524 37 583 37 641 15 700 15"
-                  stroke="#467c66"
-                  strokeWidth="2.5"
-                  fill="none"
-                />
-                <path
-                  d="M0 132 C60 132 60 113 116 113 S175 120 233 120 291 98 350 98 408 109 466 109 524 77 583 77 641 70 700 70"
-                  stroke="#dda485"
-                  strokeWidth="2"
-                  strokeDasharray="5 5"
-                  fill="none"
-                />
-              </svg>
-              <div className="chart-labels">
-                {[
-                  "Sat, 7",
-                  "Sun, 8",
-                  "Mon, 9",
-                  "Tue, 10",
-                  "Wed, 11",
-                  "Thu, 12",
-                  "Fri, 13",
-                ].map((x) => (
-                  <span key={x}>{x}</span>
-                ))}
-              </div>
-            </div>
-          </div>
+          {recentRfqs.loading ? (
+            <p className="loading-text">Loading recent quote requests…</p>
+          ) : latestRows.length ? (
+            <DataTable
+              headers={[
+                "Request / customer",
+                "Requested seafood",
+                "Delivery to",
+                "Status",
+                "",
+              ]}
+            >
+              {latestRows.map((rfq) => (
+                <tr key={rfq.id}>
+                  <td>
+                    <Link className="table-primary" href={`/rfqs/${rfq.id}`}>
+                      {rfq.customer_name}
+                    </Link>
+                    <small>{rfq.reference}</small>
+                  </td>
+                  <td>
+                    {rfq.items.map((item) => item.name).join(", ")}
+                    <small>
+                      {rfq.items.length}{" "}
+                      {rfq.items.length === 1 ? "item" : "items"}
+                    </small>
+                  </td>
+                  <td>{rfq.location}</td>
+                  <td>
+                    <Badge>{rfq.status}</Badge>
+                  </td>
+                  <td>
+                    <Link
+                      className="row-action"
+                      href={`/rfqs/${rfq.id}`}
+                      aria-label={`Review ${rfq.reference}`}
+                    >
+                      <Icon name="arrow" size={18} />
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </DataTable>
+          ) : (
+            <EmptyState
+              title="No quote requests yet"
+              description="Requests from your storefront will show up here automatically."
+            />
+          )}
         </Card>
         <Card
           title="Your attention, please"
-          subtitle="A small list. A big difference."
+          subtitle="Pending requests and sent quotations"
           className="attention-card"
         >
-          <Link href="/rfqs/RFQ-2026-001" className="attention-item">
-            <span className="attention-icon mint">
-              <Icon name="inbox" />
-            </span>
-            <span>
-              <strong>A new quote request</strong>
-              <small>Maia is looking for dried squid.</small>
-            </span>
-            <Icon name="chevron" size={16} />
-          </Link>
-          <Link href="/quotations/QT-2026-002" className="attention-item">
-            <span className="attention-icon sand">
-              <Icon name="clock" />
-            </span>
-            <span>
-              <strong>A quotation to follow up</strong>
-              <small>Anton’s quote is awaiting a response.</small>
-            </span>
-            <Icon name="chevron" size={16} />
-          </Link>
-          <Link href="/orders/ORD-2026-001" className="attention-item">
-            <span className="attention-icon peach">
-              <Icon name="bag" />
-            </span>
-            <span>
-              <strong>Ready for the next step</strong>
-              <small>Sofia’s order needs packing.</small>
-            </span>
-            <Icon name="chevron" size={16} />
-          </Link>
+          {attentionRfqs.map((rfq) => (
+            <Link
+              key={`rfq-${rfq.id}`}
+              href={`/rfqs/${rfq.id}`}
+              className="attention-item"
+            >
+              <span className="attention-icon mint">
+                <Icon name="inbox" />
+              </span>
+              <span>
+                <strong>New request · {rfq.reference}</strong>
+                <small>
+                  {rfq.customer_name} requested {rfq.items.length}{" "}
+                  {rfq.items.length === 1 ? "item" : "items"}.
+                </small>
+              </span>
+              <Icon name="chevron" size={16} />
+            </Link>
+          ))}
+          {attentionQuotes.map((quote) => (
+            <Link
+              key={`quote-${quote.id}`}
+              href={`/quotations/${quote.id}`}
+              className="attention-item"
+            >
+              <span className="attention-icon sand">
+                <Icon name="clock" />
+              </span>
+              <span>
+                <strong>
+                  Sent quotation · {quote.reference}
+                  {quote.version > 1 ? ` v${quote.version}` : ""}
+                </strong>
+                <small>
+                  {quote.rfq?.customer_name ?? "Customer"} ·{" "}
+                  {money(quote.total_centavos)}
+                </small>
+              </span>
+              <Icon name="chevron" size={16} />
+            </Link>
+          ))}
+          {!attentionRfqs.length && !attentionQuotes.length && (
+            <p className="muted">
+              No pending requests or sent quotations right now.
+            </p>
+          )}
           <div className="attention-foot">
             <Icon name="leaf" size={16} />
-            Little details. Lasting relationships.
+            Sourced on request. Quoted with care.
           </div>
         </Card>
       </div>
-      <Card
-        title="Fresh in your inbox"
-        subtitle="The latest requests from your customers"
-        action={
-          <Link className="text-link" href="/rfqs">
-            View all requests
-            <Icon name="arrow" size={15} />
-          </Link>
-        }
-      >
-        <DataTable
-          headers={[
-            "Request / customer",
-            "Products",
-            "Delivery to",
-            "Status",
-            "",
-          ]}
-        >
-          {data.rfqs.slice(0, 4).map((r) => (
-            <tr key={r.id}>
-              <td>
-                <Link className="table-primary" href={`/rfqs/${r.id}`}>
-                  {r.customer}
-                </Link>
-                <small>
-                  {r.id} · {r.date}
-                </small>
-              </td>
-              <td>
-                {data.products.find((p) => p.id === r.productId)?.name}
-                <small>{r.quantity} kg requested</small>
-              </td>
-              <td>{r.location}</td>
-              <td>
-                <Badge>{r.status}</Badge>
-              </td>
-              <td>
-                <Link
-                  className="row-action"
-                  href={`/rfqs/${r.id}`}
-                  aria-label={`Review ${r.id}`}
-                >
-                  <Icon name="arrow" size={18} />
-                </Link>
-              </td>
-            </tr>
-          ))}
-        </DataTable>
-      </Card>
     </>
   );
 }

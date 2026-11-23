@@ -15,7 +15,7 @@ import {
   type ProductDraft,
 } from "@/lib/products";
 import { useAuth } from "../auth-provider";
-import { useDemo } from "../demo-provider";
+import { useWorkspace } from "../workspace-provider";
 import { BackLink, Badge, Button, Card, Field, PageHeader } from "../ui";
 import { Icon } from "../ui/icon";
 import { ArchiveProductDialog } from "./archive-dialog";
@@ -23,7 +23,7 @@ import { ProductImage, ProductImageUpload } from "./product-image";
 
 export function ProductEditor({ initial }: { initial?: CatalogProduct }) {
   const { request } = useAuth();
-  const { notify } = useDemo();
+  const { notify } = useWorkspace();
   const router = useRouter();
   const [product, setProduct] = useState(initial ?? null);
   const [p, setP] = useState<ProductDraft>(() =>

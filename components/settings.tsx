@@ -1,16 +1,13 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
-import { initialData } from "@/lib/data";
-import { useDemo } from "./demo-provider";
-import { Badge, Button, Card, Dialog, Field, PageHeader } from "./ui";
+import { useWorkspace } from "./workspace-provider";
+import { Badge, Button, Card, Field, PageHeader } from "./ui";
 import { Icon } from "./ui/icon";
 
 export function Settings() {
-  const { data, update, notify } = useDemo();
+  const { settings, updateSettings, resetSettings, notify } = useWorkspace();
   const [error, setError] = useState("");
-  const [showReset, setShowReset] = useState(false);
-  const settings = data.settings;
 
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,22 +33,22 @@ export function Settings() {
       next.deposit > 100
     ) {
       setError(
-        "Check your business details, quote validity and deposit percentage.",
+        "Check your business details, quote validity, and deposit percentage.",
       );
       return;
     }
 
-    update((current) => ({ ...current, settings: next }));
+    updateSettings(next);
     setError("");
-    notify("Workspace settings saved in this browser’s demo.");
+    notify("Workspace settings saved.");
   }
 
   return (
     <>
       <PageHeader
-        eyebrow="MAKE IT YOUR OWN"
+        eyebrow="WORKSPACE PREFERENCES"
         title="Workspace settings"
-        description="The little details that keep your island business moving."
+        description="Default business details and starting terms for new quotations."
       />
       <div className="settings-layout">
         <form
@@ -61,7 +58,7 @@ export function Settings() {
         >
           <Card
             title="Business details"
-            subtitle="The name and contact details used in your demo workspace"
+            subtitle="Reference contact details for your IslaSource workspace"
           >
             <div className="form-grid">
               <Field label="Business name">
@@ -109,12 +106,12 @@ export function Settings() {
           </Card>
           <Card
             title="Quotation defaults"
-            subtitle="A starting point for new quotations. Existing quotes stay as agreed."
+            subtitle="Starting values when preparing a new quotation draft. Sent quotes keep their own terms."
           >
             <div className="form-grid">
               <Field
                 label="Quotation validity (days)"
-                hint="Set how long each new quotation remains valid."
+                hint="Default is 2 days (48 hours). You can customize per quotation."
               >
                 <input
                   aria-label="Quotation validity in days"
@@ -129,7 +126,7 @@ export function Settings() {
               </Field>
               <Field
                 label="Deposit percentage"
-                hint="You can adjust payment terms on each new quotation."
+                hint="Default deposit percentage for new quotation drafts."
               >
                 <input
                   aria-label="Default deposit percentage"
@@ -144,25 +141,26 @@ export function Settings() {
               </Field>
             </div>
             <div className="soft-note">
-              Prices and availability are confirmed after checking the catch.
-              Match each quote’s validity to your actual availability window.
+              Prices and availability are confirmed after checking supply. Match
+              each quotation’s validity to your actual sourcing window.
             </div>
           </Card>
-          {error && <p role="alert">{error}</p>}
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
           <div className="form-footer">
             <Button
               type="button"
               variant="ghost"
               onClick={() => {
-                update((current) => ({
-                  ...current,
-                  settings: { ...initialData.settings },
-                }));
+                resetSettings();
                 setError("");
-                notify("Demo settings restored to their defaults.");
+                notify("Default quotation settings restored.");
               }}
             >
-              Restore demo defaults
+              Restore defaults
             </Button>
             <Button type="submit">
               <Icon name="check" size={17} />
@@ -172,27 +170,27 @@ export function Settings() {
         </form>
         <aside className="detail-aside">
           <Card
-            title="Your connections"
-            subtitle="A preview of what comes next"
+            title="Workspace connections"
+            subtitle="Active services backing this admin"
           >
             <dl className="detail-lines">
               <div>
-                <dt>Payment provider</dt>
-                <dd>PayMongo QR Ph</dd>
-              </div>
-              <div>
-                <dt>Payment environment</dt>
+                <dt>Catalog, RFQs & quotes</dt>
                 <dd>
-                  <Badge>Demo only</Badge>
+                  <Badge>Live API</Badge>
                 </dd>
               </div>
               <div>
-                <dt>Customer notifications</dt>
-                <dd>Preview only · no messages sent</dd>
+                <dt>Quotation emails</dt>
+                <dd>Laravel Mail (Gmail SMTP)</dd>
               </div>
               <div>
-                <dt>Workspace storage</dt>
-                <dd>This browser</dd>
+                <dt>Payment provider</dt>
+                <dd>PayMongo QR Ph (next phase)</dd>
+              </div>
+              <div>
+                <dt>Default preferences</dt>
+                <dd>Saved in this browser</dd>
               </div>
             </dl>
           </Card>
@@ -202,54 +200,11 @@ export function Settings() {
             <p>
               Keep customer-facing details clear and payment terms consistent.
               Final availability and pricing are always checked before you send
-              a quote.
+              a quotation.
             </p>
           </div>
-          <Card
-            title="A fresh demo start"
-            subtitle="Replay the sample customer journey"
-          >
-            <p className="reset-description">
-              Restore all browser-local sample requests, quotations, orders,
-              products and settings. Your edits will be cleared. You’ll stay
-              signed into this demo.
-            </p>
-            <Button variant="secondary" onClick={() => setShowReset(true)}>
-              Reset demo workspace
-            </Button>
-          </Card>
         </aside>
       </div>
-      {showReset && (
-        <Dialog
-          title="Reset the demo workspace?"
-          onClose={() => setShowReset(false)}
-        >
-          <div className="dialog-body">
-            <p>
-              This clears every saved demo edit in this browser and restores the
-              original sample records. Your sign-in stays active.
-            </p>
-          </div>
-          <div className="dialog-footer">
-            <Button variant="secondary" onClick={() => setShowReset(false)}>
-              Keep my edits
-            </Button>
-            <Button
-              onClick={() => {
-                update(() => structuredClone(initialData));
-                setShowReset(false);
-                setError("");
-                notify(
-                  "Demo workspace reset. The original sample records are ready to explore.",
-                );
-              }}
-            >
-              Reset sample records
-            </Button>
-          </div>
-        </Dialog>
-      )}
     </>
   );
 }

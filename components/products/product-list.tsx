@@ -11,7 +11,7 @@ import {
   type ProductPage,
 } from "@/lib/products";
 import { useAuth } from "../auth-provider";
-import { useDemo } from "../demo-provider";
+import { useWorkspace } from "../workspace-provider";
 import { useApiResource } from "../use-api-resource";
 import {
   Badge,
@@ -29,7 +29,7 @@ import { ArchiveProductDialog } from "./archive-dialog";
 
 export function ProductList() {
   const { request } = useAuth();
-  const { notify } = useDemo();
+  const { notify } = useWorkspace();
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const [category, setCategory] = useState("All");

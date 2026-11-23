@@ -1,4 +1,5 @@
 import { ApiError, type createApiClient } from "./api.ts";
+import { type ApiQuotationSummary } from "./quotations.ts";
 
 export const rfqStatuses = [
   "New",
@@ -39,6 +40,7 @@ export type ApiRfq = {
   status: RfqStatus;
   items: ApiRfqItem[];
   internal_notes?: ApiRfqNote[];
+  quotations?: ApiQuotationSummary[];
   created_at: string;
 };
 

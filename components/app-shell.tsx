@@ -1,8 +1,8 @@
 "use client";
+
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useDemo } from "./demo-provider";
 import { useAuth } from "./auth-provider";
 import { AuthStatus } from "./auth-status";
 import { Brand } from "./brand";
@@ -13,6 +13,7 @@ import {
   type ProductPage,
 } from "@/lib/products";
 import { rfqListPath, type ApiRfqPage } from "@/lib/rfqs";
+import { quotationListPath, type ApiQuotationPage } from "@/lib/quotations";
 import { useApiResource } from "./use-api-resource";
 
 const navigation = [
@@ -23,20 +24,22 @@ const navigation = [
   { href: "/products", label: "Products", icon: "box" },
   { href: "/settings", label: "Settings", icon: "settings" },
 ];
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { ready, data } = useDemo();
   const { status, user, logout } = useAuth();
   const [mobile, setMobile] = useState(false);
   const [notifications, setNotifications] = useState(false);
   const [search, setSearch] = useState("");
   const [catalogQuery, setCatalogQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const timer = setTimeout(() => setCatalogQuery(search), 250);
     return () => clearTimeout(timer);
   }, [search]);
+
   const catalogSearch = useApiResource<ProductPage>(
     status === "authenticated" && catalogQuery.trim().length >= 2
       ? productListPath({ search: catalogQuery, per_page: 5 })
@@ -47,15 +50,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ? rfqListPath({ search: catalogQuery, per_page: 5 })
       : null,
   );
-  const rfqCount = useApiResource<ApiRfqPage>(
-    status === "authenticated"
-      ? rfqListPath({ status: "New", per_page: 1 })
+  const quotationSearch = useApiResource<ApiQuotationPage>(
+    status === "authenticated" && catalogQuery.trim().length >= 2
+      ? quotationListPath({ search: catalogQuery, per_page: 5 })
       : null,
   );
+  const newRfqs = useApiResource<ApiRfqPage>(
+    status === "authenticated"
+      ? rfqListPath({ status: "New", per_page: 5 })
+      : null,
+  );
+
   useEffect(() => {
     if (status === "anonymous" && pathname !== "/login")
       router.replace(`/login?next=${encodeURIComponent(pathname)}`);
   }, [status, pathname, router]);
+
   useEffect(() => {
     function handleKey(event: KeyboardEvent) {
       const target = event.target;
@@ -76,8 +86,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
   }, []);
+
   if (pathname === "/login") return children;
-  if (!ready || status !== "authenticated") return <AuthStatus />;
+  if (status !== "authenticated") return <AuthStatus />;
+
   const initials =
     user?.name
       .trim()
@@ -92,34 +104,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     ) || navigation[0];
   const results = workspaceSearchResults(
     [
-      ...data.rfqs.map((r) => ({
-        label: `${r.id} · ${r.customer}`,
-        href: `/rfqs/${r.id}`,
-      })),
       ...(catalogQuery.trim() === search.trim()
         ? (rfqSearch.data?.data ?? []).map((rfq) => ({
             label: `${rfq.reference} · ${rfq.customer_name} · ${rfq.email} · ${rfq.items.map((item) => item.name).join(", ")}`,
             href: `/rfqs/${rfq.id}`,
           }))
         : []),
-      ...data.quotes.map((q) => ({
-        label: `${q.id} · ${data.rfqs.find((r) => r.id === q.rfqId)?.customer ?? "Quotation"}`,
-        href: `/quotations/${q.id}`,
-      })),
-      ...data.orders.map((o) => ({
-        label: `${o.id} · ${o.customer}`,
-        href: `/orders/${o.id}`,
-      })),
+      ...(catalogQuery.trim() === search.trim()
+        ? (quotationSearch.data?.data ?? []).map((q) => ({
+            label: `${q.reference} · v${q.version} · ${q.rfq?.customer_name ?? "Quotation"}`,
+            href: `/quotations/${q.id}`,
+          }))
+        : []),
       ...navigation.map((n) => ({ label: n.label, href: n.href })),
     ],
-    catalogQuery.trim() === search.trim() ? catalogSearch.data?.data ?? [] : [],
+    catalogQuery.trim() === search.trim()
+      ? (catalogSearch.data?.data ?? [])
+      : [],
     search,
   );
+  const unreadRfqs = newRfqs.data?.data ?? [];
+  const newRfqTotal = newRfqs.data?.meta.total ?? 0;
+
   function closeNav() {
     setMobile(false);
     setSearch("");
     setNotifications(false);
   }
+
   return (
     <div className="app-shell">
       {mobile && (
@@ -152,10 +164,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               <Icon name={n.icon} size={20} />
               {n.label}
-              {n.href === "/rfqs" && Boolean(rfqCount.data?.meta.total) && (
-                <span className="nav-count">
-                  {rfqCount.data?.meta.total}
-                </span>
+              {n.href === "/rfqs" && newRfqTotal > 0 && (
+                <span className="nav-count">{newRfqTotal}</span>
               )}
             </Link>
           ))}
@@ -163,11 +173,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="sidebar-bottom">
           <div className="prototype-note">
             <span className="tiny-dot" />
-            {pathname.startsWith("/products")
-              ? "PRODUCT CATALOG"
-              : pathname.startsWith("/rfqs")
-                ? "LIVE QUOTE INBOX"
-                : "SAMPLE BUSINESS DATA"}
+            ISLASOURCE WORKSPACE
             <p>Good things start at the source.</p>
           </div>
           <div className="admin-identity">
@@ -243,40 +249,39 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 onClick={() => setNotifications(!notifications)}
               >
                 <Icon name="bell" size={21} />
-                <span />
+                {newRfqTotal > 0 && <span />}
               </button>
               {notifications && (
                 <div className="notification-popover">
                   <div>
-                    <strong>Your updates</strong>
-                    <span>Demo activity</span>
+                    <strong>New quote requests</strong>
+                    <span>{newRfqTotal} waiting</span>
                   </div>
-                  <Link
-                    href="/rfqs/RFQ-2026-001"
-                    onClick={() => setNotifications(false)}
-                  >
-                    <span className="notification-symbol">
-                      <Icon name="inbox" size={18} />
-                    </span>
-                    <span>
-                      <strong>A fresh request is here</strong>
-                      <small>Maia Reyes requested 5 kg dried squid.</small>
-                      <em>Today · Sample notification</em>
-                    </span>
-                  </Link>
-                  <Link
-                    href="/orders/ORD-2026-001"
-                    onClick={() => setNotifications(false)}
-                  >
-                    <span className="notification-symbol coral">
-                      <Icon name="bag" size={18} />
-                    </span>
-                    <span>
-                      <strong>An order needs packing</strong>
-                      <small>Sofia’s order is scheduled for Nov 17.</small>
-                      <em>Demo reminder</em>
-                    </span>
-                  </Link>
+                  {unreadRfqs.length ? (
+                    unreadRfqs.map((rfq) => (
+                      <Link
+                        key={rfq.id}
+                        href={`/rfqs/${rfq.id}`}
+                        onClick={() => setNotifications(false)}
+                      >
+                        <span className="notification-symbol">
+                          <Icon name="inbox" size={18} />
+                        </span>
+                        <span>
+                          <strong>{rfq.reference}</strong>
+                          <small>
+                            {rfq.customer_name} · {rfq.items.length}{" "}
+                            {rfq.items.length === 1 ? "item" : "items"}
+                          </small>
+                          <em>{rfq.location}</em>
+                        </span>
+                      </Link>
+                    ))
+                  ) : (
+                    <p className="muted" style={{ padding: "12px 16px" }}>
+                      No new quote requests right now.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -289,12 +294,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <footer className="workspace-footer">
           <span>Fresh from the island. Managed with care.</span>
           <span>
-            <span className="tiny-dot" />{" "}
-            {pathname.startsWith("/products")
-              ? "Catalog · Saved product records"
-              : pathname.startsWith("/rfqs")
-                ? "Requests · Live guest inbox"
-                : "Prototype · Sample business records"}
+            <span className="tiny-dot" /> IslaSource Seafoods · Bantayan Island
           </span>
         </footer>
       </div>
