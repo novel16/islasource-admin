@@ -21,7 +21,6 @@ const navigation = [
   { href: "/quotations", label: "Quotations", icon: "file" },
   { href: "/orders", label: "Orders", icon: "bag" },
   { href: "/products", label: "Products", icon: "box" },
-  { href: "/suppliers", label: "Suppliers", icon: "people" },
   { href: "/settings", label: "Settings", icon: "settings" },
 ];
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -49,7 +48,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       : null,
   );
   const rfqCount = useApiResource<ApiRfqPage>(
-    status === "authenticated" ? rfqListPath({ per_page: 1 }) : null,
+    status === "authenticated"
+      ? rfqListPath({ status: "New", per_page: 1 })
+      : null,
   );
   useEffect(() => {
     if (status === "anonymous" && pathname !== "/login")
@@ -164,7 +165,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="tiny-dot" />
             {pathname.startsWith("/products")
               ? "PRODUCT CATALOG"
-              : "SAMPLE BUSINESS DATA"}
+              : pathname.startsWith("/rfqs")
+                ? "LIVE QUOTE INBOX"
+                : "SAMPLE BUSINESS DATA"}
             <p>Good things start at the source.</p>
           </div>
           <div className="admin-identity">
@@ -289,7 +292,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="tiny-dot" />{" "}
             {pathname.startsWith("/products")
               ? "Catalog · Saved product records"
-              : "Prototype · Sample business records"}
+              : pathname.startsWith("/rfqs")
+                ? "Requests · Live guest inbox"
+                : "Prototype · Sample business records"}
           </span>
         </footer>
       </div>

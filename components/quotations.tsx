@@ -117,7 +117,7 @@ export function QuotationList() {
       </Card>
       <div className="inline-tip">
         <Icon name="leaf" size={18} />
-        Your customer previews show selling prices and terms. Supplier costs and
+        Your customer previews show selling prices and terms. Base costs and
         markup stay private.
       </div>
     </>
@@ -190,15 +190,11 @@ function QuotationEditor({ initial }: { initial: Quote }) {
       notify("Opened the existing draft revision for this request.");
       return;
     }
-    const selectedOffer = rfq?.offers.find(
-      (o) => o.supplierId === rfq.selectedSupplier,
-    );
     const id = `QT-2026-${String(Math.max(...data.quotes.map((x) => Number(x.id.split("-").at(-1)))) + 1).padStart(3, "0")}`;
     const revision = {
       ...stored,
       id,
       status: "Draft",
-      unitCost: selectedOffer?.unitCost ?? stored.unitCost,
       validityDays: data.settings.validity,
     };
     update((d) => ({ ...d, quotes: [...d.quotes, revision] }));
@@ -340,7 +336,7 @@ function QuotationEditor({ initial }: { initial: Quote }) {
               </div>
               <div className="form-grid">
                 {number("quantity", "Quantity (kg)", false, 100000)}
-                {number("unitCost", "Supplier cost per kg (₱)", true)}
+                {number("unitCost", "Unit cost per kg (₱)", true)}
                 {number("handling", "Handling & packing (₱)", true)}
                 {number("markup", "Markup on cost + handling (%)", false, 1000)}
                 {number("delivery", "Delivery fee (₱)", true)}
@@ -349,9 +345,8 @@ function QuotationEditor({ initial }: { initial: Quote }) {
               <div className="calculation-note">
                 <Icon name="help" size={16} />
                 <p>
-                  Markup is calculated on supplier cost plus handling. Delivery
-                  is added after markup. Values are rounded to the nearest
-                  centavo.
+                  Markup is calculated on unit cost plus handling. Delivery is
+                  added after markup. Values are rounded to the nearest centavo.
                 </p>
               </div>
               {error && (
@@ -429,7 +424,7 @@ function QuotationEditor({ initial }: { initial: Quote }) {
                 <dl className="price-breakdown">
                   <div>
                     <dt>
-                      Supplier cost{" "}
+                      Base seafood cost{" "}
                       <small>
                         {q.quantity} kg × {money(q.unitCost)}
                       </small>

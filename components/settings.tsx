@@ -114,7 +114,7 @@ export function Settings() {
             <div className="form-grid">
               <Field
                 label="Quotation validity (days)"
-                hint="Confirm the supplier can hold the offer for this period."
+                hint="Set how long each new quotation remains valid."
               >
                 <input
                   aria-label="Quotation validity in days"
@@ -144,8 +144,8 @@ export function Settings() {
               </Field>
             </div>
             <div className="soft-note">
-              Prices and availability are confirmed after sourcing. Match each
-              quote’s validity to the supplier’s actual reservation window.
+              Prices and availability are confirmed after checking the catch.
+              Match each quote’s validity to your actual availability window.
             </div>
           </Card>
           {error && <p role="alert">{error}</p>}
@@ -201,7 +201,8 @@ export function Settings() {
             <h3>A personal touch, at every step.</h3>
             <p>
               Keep customer-facing details clear and payment terms consistent.
-              Final supplier offers are always checked before you send a quote.
+              Final availability and pricing are always checked before you send
+              a quote.
             </p>
           </div>
           <Card
@@ -210,8 +211,8 @@ export function Settings() {
           >
             <p className="reset-description">
               Restore all browser-local sample requests, quotations, orders,
-              products, suppliers and settings. Your edits will be cleared.
-              You’ll stay signed into this demo.
+              products and settings. Your edits will be cleared. You’ll stay
+              signed into this demo.
             </p>
             <Button variant="secondary" onClick={() => setShowReset(true)}>
               Reset demo workspace

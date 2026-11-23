@@ -15,15 +15,6 @@ export type Product = {
   og_image: string;
   indexable: boolean;
 };
-export type Supplier = {
-  id: string;
-  name: string;
-  contact: string;
-  phone: string;
-  location: string;
-  specialty: string;
-  status: string;
-};
 export type RFQ = {
   id: string;
   customer: string;
@@ -36,8 +27,6 @@ export type RFQ = {
   productId: string;
   quantity: number;
   note: string;
-  offers: { supplierId: string; unitCost: number; availability: string }[];
-  selectedSupplier: string;
   notes: string[];
 };
 export type Quote = {
@@ -68,7 +57,6 @@ export type Order = {
 };
 export type DemoData = {
   products: Product[];
-  suppliers: Supplier[];
   rfqs: RFQ[];
   quotes: Quote[];
   orders: Order[];
@@ -138,35 +126,6 @@ export const initialData: DemoData = {
       "Lightly salted, sun-dried danggit. A crisp and delicious taste of home.",
     ),
   ],
-  suppliers: [
-    {
-      id: "sup-1",
-      name: "Isla North Seafoods",
-      contact: "Ramon dela Cruz",
-      phone: "+63 917 555 0101",
-      location: "Bantayan, Cebu",
-      specialty: "Dried squid, danggit",
-      status: "Active",
-    },
-    {
-      id: "sup-2",
-      name: "Santa Fe Fishers Co-op",
-      contact: "Lina Santos",
-      phone: "+63 918 555 0202",
-      location: "Santa Fe, Cebu",
-      specialty: "Fresh crab, scallops",
-      status: "Active",
-    },
-    {
-      id: "sup-3",
-      name: "Madridejos Island Catch",
-      contact: "Jose Garcia",
-      phone: "+63 919 555 0303",
-      location: "Madridejos, Cebu",
-      specialty: "Dried seafood",
-      status: "Active",
-    },
-  ],
   rfqs: [
     {
       id: "RFQ-2026-001",
@@ -180,19 +139,6 @@ export const initialData: DemoData = {
       productId: "dried-squid",
       quantity: 5,
       note: "Medium size, please. For a family gathering. Delivery before lunch if possible.",
-      offers: [
-        {
-          supplierId: "sup-1",
-          unitCost: 50000,
-          availability: "5 kg available · ready tomorrow",
-        },
-        {
-          supplierId: "sup-3",
-          unitCost: 52500,
-          availability: "10 kg available · 2-day lead time",
-        },
-      ],
-      selectedSupplier: "sup-1",
       notes: [],
     },
     {
@@ -203,19 +149,11 @@ export const initialData: DemoData = {
       location: "Mandaue City, Cebu",
       deliveryDate: "2026-11-19",
       date: "Nov 13, 2026",
-      status: "Sourcing",
+      status: "Reviewing",
       productId: "blue-crab",
       quantity: 12,
       note: "Live or very fresh crabs, restaurant grade. Weekly order possible.",
-      offers: [
-        {
-          supplierId: "sup-2",
-          unitCost: 38000,
-          availability: "15 kg available · morning catch",
-        },
-      ],
-      selectedSupplier: "sup-2",
-      notes: ["Checking larger crab sizes with the co-op."],
+      notes: ["Checking larger crab sizes from the morning catch."],
     },
     {
       id: "RFQ-2026-003",
@@ -229,14 +167,6 @@ export const initialData: DemoData = {
       productId: "scallops",
       quantity: 8,
       note: "Cleaned scallops for a weekend event.",
-      offers: [
-        {
-          supplierId: "sup-2",
-          unitCost: 28000,
-          availability: "20 kg available · frozen",
-        },
-      ],
-      selectedSupplier: "sup-2",
       notes: [],
     },
     {
@@ -251,14 +181,6 @@ export const initialData: DemoData = {
       productId: "dried-fish",
       quantity: 10,
       note: "Small, boneless danggit for our breakfast menu.",
-      offers: [
-        {
-          supplierId: "sup-1",
-          unitCost: 42000,
-          availability: "10 kg available",
-        },
-      ],
-      selectedSupplier: "sup-1",
       notes: [],
     },
     {
@@ -273,10 +195,6 @@ export const initialData: DemoData = {
       productId: "dried-squid",
       quantity: 3,
       note: "Please vacuum pack in 500g portions.",
-      offers: [
-        { supplierId: "sup-1", unitCost: 50000, availability: "Available" },
-      ],
-      selectedSupplier: "sup-1",
       notes: [],
     },
   ],
