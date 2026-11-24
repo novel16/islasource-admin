@@ -76,6 +76,12 @@ export type ApiQuotation = {
   };
   items?: ApiQuotationItem[];
   versions?: ApiQuotationSummary[];
+  order?: {
+    id: number;
+    reference: string;
+    status: string;
+    payment_status: string;
+  } | null;
   created_at: string;
   updated_at: string;
 };

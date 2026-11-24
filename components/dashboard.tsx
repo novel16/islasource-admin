@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { money } from "@/lib/data";
+import { orderListPath, type ApiOrderPage } from "@/lib/orders";
 import { productListPath, type ProductPage } from "@/lib/products";
 import { quotationListPath, type ApiQuotationPage } from "@/lib/quotations";
 import { rfqListPath, type ApiRfqPage } from "@/lib/rfqs";
@@ -29,8 +30,8 @@ export function Dashboard() {
   const sentQuotes = useApiResource<ApiQuotationPage>(
     quotationListPath({ status: "Sent", per_page: 3 }),
   );
-  const acceptedQuotes = useApiResource<ApiQuotationPage>(
-    quotationListPath({ status: "Accepted", per_page: 1 }),
+  const processingOrders = useApiResource<ApiOrderPage>(
+    orderListPath({ status: "Processing", per_page: 3 }),
   );
   const publishedProducts = useApiResource<ProductPage>(
     productListPath({ status: "Published", per_page: 1 }),
@@ -39,12 +40,13 @@ export function Dashboard() {
   const totalRfqs = recentRfqs.data?.meta.total ?? 0;
   const newRfqCount = newRfqs.data?.meta.total ?? 0;
   const sentQuoteCount = sentQuotes.data?.meta.total ?? 0;
-  const acceptedQuoteCount = acceptedQuotes.data?.meta.total ?? 0;
+  const processingOrderCount = processingOrders.data?.meta.total ?? 0;
   const publishedProductCount = publishedProducts.data?.meta.total ?? 0;
 
   const firstNewRfq = newRfqs.data?.data[0];
   const latestRows = recentRfqs.data?.data ?? [];
   const attentionRfqs = newRfqs.data?.data ?? [];
+  const attentionOrders = processingOrders.data?.data ?? [];
   const attentionQuotes = sentQuotes.data?.data ?? [];
 
   return (
@@ -103,13 +105,13 @@ export function Dashboard() {
             color: "sand",
           },
           {
-            label: "Accepted quotes",
-            value: acceptedQuotes.loading
+            label: "Paid orders to source",
+            value: processingOrders.loading
               ? "—"
-              : String(acceptedQuoteCount).padStart(2, "0"),
-            icon: "check",
-            note: "Confirmed by customers",
-            detail: "Ready for deposit follow-up",
+              : String(processingOrderCount).padStart(2, "0"),
+            icon: "bag",
+            note: "Full QR Ph payment verified",
+            detail: "Ready to source & pack",
             color: "blue",
           },
           {
@@ -224,6 +226,25 @@ export function Dashboard() {
               <Icon name="chevron" size={16} />
             </Link>
           ))}
+          {attentionOrders.map((order) => (
+            <Link
+              key={`order-${order.id}`}
+              href={`/orders/${order.id}`}
+              className="attention-item"
+            >
+              <span className="attention-icon peach">
+                <Icon name="bag" />
+              </span>
+              <span>
+                <strong>Paid order · {order.reference}</strong>
+                <small>
+                  {order.customer_name} · {money(order.paid_centavos)} ready to
+                  source
+                </small>
+              </span>
+              <Icon name="chevron" size={16} />
+            </Link>
+          ))}
           {attentionQuotes.map((quote) => (
             <Link
               key={`quote-${quote.id}`}
@@ -246,9 +267,11 @@ export function Dashboard() {
               <Icon name="chevron" size={16} />
             </Link>
           ))}
-          {!attentionRfqs.length && !attentionQuotes.length && (
+          {!attentionRfqs.length &&
+            !attentionOrders.length &&
+            !attentionQuotes.length && (
             <p className="muted">
-              No pending requests or sent quotations right now.
+              No pending requests, orders, or sent quotations right now.
             </p>
           )}
           <div className="attention-foot">

@@ -249,7 +249,6 @@ function LiveRfqDetail({ id }: { id: number }) {
         rfq.id,
         {
           validity_hours: Math.min(720, Math.max(1, settings.validity * 24)),
-          deposit_percent: settings.deposit,
         },
       );
       router.push(`/quotations/${created.id}`);

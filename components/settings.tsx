@@ -18,7 +18,6 @@ export function Settings() {
       phone: String(form.get("phone") ?? "").trim(),
       address: String(form.get("address") ?? "").trim(),
       validity: Number(form.get("validity")),
-      deposit: Number(form.get("deposit")),
     };
 
     if (
@@ -27,14 +26,9 @@ export function Settings() {
       !next.address ||
       !Number.isInteger(next.validity) ||
       next.validity < 1 ||
-      next.validity > 30 ||
-      !Number.isFinite(next.deposit) ||
-      next.deposit < 0 ||
-      next.deposit > 100
+      next.validity > 30
     ) {
-      setError(
-        "Check your business details, quote validity, and deposit percentage.",
-      );
+      setError("Check your business details and quote validity.");
       return;
     }
 
@@ -48,7 +42,7 @@ export function Settings() {
       <PageHeader
         eyebrow="WORKSPACE PREFERENCES"
         title="Workspace settings"
-        description="Default business details and starting terms for new quotations."
+        description="Default business details and quotation validity window."
       />
       <div className="settings-layout">
         <form
@@ -105,7 +99,7 @@ export function Settings() {
             </div>
           </Card>
           <Card
-            title="Quotation defaults"
+            title="Quotation & payment rules"
             subtitle="Starting values when preparing a new quotation draft. Sent quotes keep their own terms."
           >
             <div className="form-grid">
@@ -125,18 +119,14 @@ export function Settings() {
                 />
               </Field>
               <Field
-                label="Deposit percentage"
-                hint="Default deposit percentage for new quotation drafts."
+                label="Payment policy"
+                hint="All accepted quotations require 100% upfront payment via QR Ph before sourcing."
               >
                 <input
-                  aria-label="Default deposit percentage"
-                  name="deposit"
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={1}
-                  required
-                  defaultValue={settings.deposit}
+                  aria-label="Payment policy"
+                  type="text"
+                  readOnly
+                  value="100% Full Payment (PayMongo QR Ph)"
                 />
               </Field>
             </div>
@@ -175,18 +165,20 @@ export function Settings() {
           >
             <dl className="detail-lines">
               <div>
-                <dt>Catalog, RFQs & quotes</dt>
+                <dt>Catalog, RFQs, quotes & orders</dt>
                 <dd>
                   <Badge>Live API</Badge>
                 </dd>
               </div>
               <div>
-                <dt>Quotation emails</dt>
+                <dt>Quotation & order emails</dt>
                 <dd>Laravel Mail (Gmail SMTP)</dd>
               </div>
               <div>
                 <dt>Payment provider</dt>
-                <dd>PayMongo QR Ph (next phase)</dd>
+                <dd>
+                  <Badge>PayMongo QR Ph</Badge>
+                </dd>
               </div>
               <div>
                 <dt>Default preferences</dt>
@@ -196,11 +188,10 @@ export function Settings() {
           </Card>
           <div className="aside-tip">
             <Icon name="leaf" size={24} />
-            <h3>A personal touch, at every step.</h3>
+            <h3>Full payment, zero inventory risk.</h3>
             <p>
-              Keep customer-facing details clear and payment terms consistent.
-              Final availability and pricing are always checked before you send
-              a quotation.
+              Customers pay 100% via PayMongo QR Ph after accepting a quotation,
+              so you only buy from island suppliers once payment is verified.
             </p>
           </div>
         </aside>

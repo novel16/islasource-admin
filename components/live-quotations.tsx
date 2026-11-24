@@ -174,8 +174,8 @@ export function LiveQuotationList() {
             headers={[
               "Quotation",
               "Customer",
-              "Order value",
-              "Deposit",
+              "Total (Full)",
+              "Payment",
               "Status",
               "",
             ]}
@@ -200,8 +200,8 @@ export function LiveQuotationList() {
                 </td>
                 <td className="money">{money(q.total_centavos)}</td>
                 <td>
-                  {money(q.deposit_centavos)}
-                  <small>{q.deposit_percent}% to confirm</small>
+                  100% QR Ph
+                  <small>Full payment before sourcing</small>
                 </td>
                 <td>
                   <Badge>{q.status}</Badge>
@@ -842,18 +842,12 @@ function LiveQuotationEditor({ initial }: { initial: ApiQuotation }) {
                     }
                   />
                 </Field>
-                <Field label="Required deposit (%)">
+                <Field label="Payment terms">
                   <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="1"
-                    required
-                    disabled={readOnly || busy}
-                    value={form.deposit_percent}
-                    onChange={(event) =>
-                      updateField("deposit_percent", event.target.value)
-                    }
+                    type="text"
+                    readOnly
+                    disabled
+                    value="100% Full Payment (QR Ph)"
                   />
                 </Field>
                 <Field
@@ -952,7 +946,19 @@ function LiveQuotationEditor({ initial }: { initial: ApiQuotation }) {
               {quotation.accepted_at
                 ? ` on ${new Date(quotation.accepted_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}`
                 : ""}
-              . Deposit payment & order fulfillment connect in the next phase.
+              .
+              {quotation.order && (
+                <>
+                  {" "}
+                  <Link
+                    href={`/orders/${quotation.order.id}`}
+                    className="text-link"
+                  >
+                    Open order {quotation.order.reference} ({quotation.order.payment_status})
+                    <Icon name="arrow" size={16} />
+                  </Link>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -987,18 +993,8 @@ function LiveQuotationEditor({ initial }: { initial: ApiQuotation }) {
               </div>
             </dl>
             <div className="grand-total">
-              <span>Customer total</span>
+              <span>Customer total (Full QR Ph)</span>
               <strong>{money(preview.total_centavos)}</strong>
-            </div>
-            <div className="deposit-summary">
-              <div>
-                <span>Deposit ({form.deposit_percent || 0}%)</span>
-                <strong>{money(preview.deposit_centavos)}</strong>
-              </div>
-              <div>
-                <span>Remaining balance</span>
-                <strong>{money(preview.balance_centavos)}</strong>
-              </div>
             </div>
           </Card>
 
@@ -1098,16 +1094,8 @@ function LiveQuotationEditor({ initial }: { initial: ApiQuotation }) {
                 <dd>{money(preview.delivery_centavos)}</dd>
               </div>
               <div>
-                <dt>Total</dt>
+                <dt>Total due (Full payment via QR Ph)</dt>
                 <dd>{money(preview.total_centavos)}</dd>
-              </div>
-              <div>
-                <dt>Deposit to confirm ({form.deposit_percent}%)</dt>
-                <dd>{money(preview.deposit_centavos)}</dd>
-              </div>
-              <div>
-                <dt>Balance before dispatch</dt>
-                <dd>{money(preview.balance_centavos)}</dd>
               </div>
             </dl>
             <div className="preview-terms">

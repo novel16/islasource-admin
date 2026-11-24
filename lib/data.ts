@@ -4,7 +4,6 @@ export type WorkspaceSettings = {
   phone: string;
   address: string;
   validity: number;
-  deposit: number;
 };
 
 export const defaultWorkspaceSettings: WorkspaceSettings = {
@@ -13,7 +12,6 @@ export const defaultWorkspaceSettings: WorkspaceSettings = {
   phone: "",
   address: "Bantayan Island, Cebu, Philippines",
   validity: 2,
-  deposit: 50,
 };
 
 export const money = (centavos: number) =>

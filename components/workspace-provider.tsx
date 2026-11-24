@@ -73,13 +73,6 @@ function parseSettings(raw: string): WorkspaceSettings {
         parsed.validity <= 30
           ? parsed.validity
           : defaultWorkspaceSettings.validity,
-      deposit:
-        typeof parsed.deposit === "number" &&
-        Number.isFinite(parsed.deposit) &&
-        parsed.deposit >= 0 &&
-        parsed.deposit <= 100
-          ? parsed.deposit
-          : defaultWorkspaceSettings.deposit,
     };
   } catch {
     return defaultWorkspaceSettings;

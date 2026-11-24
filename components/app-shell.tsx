@@ -14,6 +14,7 @@ import {
 } from "@/lib/products";
 import { rfqListPath, type ApiRfqPage } from "@/lib/rfqs";
 import { quotationListPath, type ApiQuotationPage } from "@/lib/quotations";
+import { orderListPath, type ApiOrderPage } from "@/lib/orders";
 import { useApiResource } from "./use-api-resource";
 
 const navigation = [
@@ -55,9 +56,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ? quotationListPath({ search: catalogQuery, per_page: 5 })
       : null,
   );
+  const orderSearch = useApiResource<ApiOrderPage>(
+    status === "authenticated" && catalogQuery.trim().length >= 2
+      ? orderListPath({ search: catalogQuery, per_page: 5 })
+      : null,
+  );
   const newRfqs = useApiResource<ApiRfqPage>(
     status === "authenticated"
       ? rfqListPath({ status: "New", per_page: 5 })
+      : null,
+  );
+  const paidOrders = useApiResource<ApiOrderPage>(
+    status === "authenticated"
+      ? orderListPath({ status: "Processing", per_page: 1 })
       : null,
   );
 
@@ -116,6 +127,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             href: `/quotations/${q.id}`,
           }))
         : []),
+      ...(catalogQuery.trim() === search.trim()
+        ? (orderSearch.data?.data ?? []).map((o) => ({
+            label: `${o.reference} · ${o.customer_name} · ${o.payment_status}`,
+            href: `/orders/${o.id}`,
+          }))
+        : []),
       ...navigation.map((n) => ({ label: n.label, href: n.href })),
     ],
     catalogQuery.trim() === search.trim()
@@ -166,6 +183,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {n.label}
               {n.href === "/rfqs" && newRfqTotal > 0 && (
                 <span className="nav-count">{newRfqTotal}</span>
+              )}
+              {n.href === "/orders" && (paidOrders.data?.meta.total ?? 0) > 0 && (
+                <span className="nav-count">{paidOrders.data?.meta.total}</span>
               )}
             </Link>
           ))}
