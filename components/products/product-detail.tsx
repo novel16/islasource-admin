@@ -1,5 +1,6 @@
 "use client";
 
+import { apiEndpoints } from "@/lib/api";
 import { type CatalogProduct } from "@/lib/products";
 import { useApiResource } from "../use-api-resource";
 import { BackLink, Button, ButtonLink, Card, PageHeader } from "../ui";
@@ -10,7 +11,7 @@ export function ProductDetail({ id }: { id: string }) {
   const valid = /^[1-9][0-9]*$/.test(id);
   const { data, error, loading, retry } = useApiResource<{
     data: CatalogProduct;
-  }>(!isNew && valid ? `/admin/products/${encodeURIComponent(id)}` : null);
+  }>(!isNew && valid ? apiEndpoints.product(id) : null);
   if (isNew) return <ProductEditor key="new" />;
   if (!valid || error?.status === 404)
     return (

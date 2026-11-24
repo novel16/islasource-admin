@@ -1,3 +1,34 @@
+export const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
+)
+  .replace(/\/+$/, "")
+  .replace(/\/api\/v1$/i, "");
+
+export const API_V1_URL = `${API_BASE_URL}/api/v1`;
+
+export const apiEndpoints = {
+  authLogin: "/admin/auth/login",
+  authMe: "/admin/auth/me",
+  authLogout: "/admin/auth/logout",
+  products: "/admin/products",
+  product: (id: number | string) =>
+    `/admin/products/${encodeURIComponent(String(id))}`,
+  productRestore: (id: number) => `/admin/products/${id}/restore`,
+  productImages: "/admin/product-images",
+  rfqs: "/admin/rfqs",
+  rfq: (id: number) => `/admin/rfqs/${id}`,
+  rfqNotes: (id: number) => `/admin/rfqs/${id}/notes`,
+  rfqQuotations: (id: number) => `/admin/rfqs/${id}/quotations`,
+  quotations: "/admin/quotations",
+  quotation: (id: number) => `/admin/quotations/${id}`,
+  quotationSend: (id: number) => `/admin/quotations/${id}/send`,
+  quotationResend: (id: number) => `/admin/quotations/${id}/resend`,
+  quotationCancel: (id: number) => `/admin/quotations/${id}/cancel`,
+  quotationRevise: (id: number) => `/admin/quotations/${id}/revise`,
+  orders: "/admin/orders",
+  order: (id: number) => `/admin/orders/${id}`,
+} as const;
+
 export type AdminUser = { id: number; name: string; email: string };
 export type LoginCredentials = { email: string; password: string };
 export type AuthGrant = {
@@ -46,10 +77,11 @@ function parseUser(value: unknown): AdminUser {
 }
 
 export function createApiClient(
-  baseUrl: string,
+  baseUrl: string = API_BASE_URL,
   fetcher: typeof fetch = fetch,
 ) {
-  const base = new URL(baseUrl.replace(/\/+$/, "") + "/");
+  const normalizedOrigin = baseUrl.replace(/\/+$/, "").replace(/\/api\/v1$/i, "");
+  const base = new URL(`${normalizedOrigin}/api/v1/`);
   if (!["http:", "https:"].includes(base.protocol))
     throw new Error("Invalid API URL");
 
@@ -123,15 +155,18 @@ export function createApiClient(
       credentials: LoginCredentials,
       signal?: AbortSignal,
     ): Promise<AuthGrant> {
-      const { data } = await request<{ data: unknown }>("/admin/auth/login", {
-        method: "POST",
-        signal,
-        body: JSON.stringify({
-          ...credentials,
-          email: credentials.email.trim(),
-          device_name: "IslaSource admin",
-        }),
-      });
+      const { data } = await request<{ data: unknown }>(
+        apiEndpoints.authLogin,
+        {
+          method: "POST",
+          signal,
+          body: JSON.stringify({
+            ...credentials,
+            email: credentials.email.trim(),
+            device_name: "IslaSource admin",
+          }),
+        },
+      );
       if (
         !record(data) ||
         typeof data.access_token !== "string" ||
@@ -153,7 +188,7 @@ export function createApiClient(
       };
     },
     async me(token: string, signal?: AbortSignal): Promise<AdminUser> {
-      const { data } = await request<{ data: unknown }>("/admin/auth/me", {
+      const { data } = await request<{ data: unknown }>(apiEndpoints.authMe, {
         token,
         signal,
       });

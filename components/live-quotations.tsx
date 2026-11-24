@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ApiError } from "@/lib/api";
+import { ApiError, apiEndpoints } from "@/lib/api";
 import { money, shortDate } from "@/lib/data";
 import {
   createQuotationsClient,
@@ -264,7 +264,7 @@ export function LiveQuotationList() {
 export function LiveQuotationDetail({ id }: { id: number }) {
   const { data, error, loading, retry } = useApiResource<{
     data: ApiQuotation;
-  }>(`/admin/quotations/${id}`);
+  }>(apiEndpoints.quotation(id));
 
   if (loading) {
     return (

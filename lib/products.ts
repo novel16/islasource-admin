@@ -1,4 +1,9 @@
-import { ApiError, type createApiClient } from "./api.ts";
+import {
+  API_BASE_URL,
+  ApiError,
+  apiEndpoints,
+  type createApiClient,
+} from "./api.ts";
 
 export const productCategories = [
   "Dried seafood",
@@ -111,7 +116,7 @@ export function productListPath(filters: ProductFilters = {}): string {
     query.set("category", filters.category);
   if (filters.status && filters.status !== "All")
     query.set("status", filters.status);
-  return `/admin/products?${query}`;
+  return `${apiEndpoints.products}?${query}`;
 }
 
 export function productPayload(input: ProductDraft): ProductDraft {
@@ -148,7 +153,7 @@ export function slugFromName(name: string): string {
 
 export function productImageSrc(
   path: string,
-  apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1",
+  apiUrl = API_BASE_URL,
 ): string {
   if (productImages.some((image) => image.src === path)) return path;
   if (/^\/storage\/products\/[a-zA-Z0-9_-]+\.(?:jpe?g|png|webp)$/.test(path))
@@ -166,14 +171,14 @@ export function createProductsClient(request: Request) {
       signal?: AbortSignal,
     ): Promise<CatalogProduct> {
       const result = await request<{ data: CatalogProduct }>(
-        `/admin/products/${encodeURIComponent(String(id))}`,
+        apiEndpoints.product(id),
         { signal },
       );
       return result.data;
     },
     async save(draft: ProductDraft, id?: number): Promise<CatalogProduct> {
       const result = await request<{ data: CatalogProduct }>(
-        id ? `/admin/products/${id}` : "/admin/products",
+        id ? apiEndpoints.product(id) : apiEndpoints.products,
         {
           method: id ? "PATCH" : "POST",
           body: JSON.stringify(productPayload(draft)),
@@ -182,11 +187,11 @@ export function createProductsClient(request: Request) {
       return result.data;
     },
     archive: (id: number) =>
-      request<void>(`/admin/products/${id}`, { method: "DELETE" }),
+      request<void>(apiEndpoints.product(id), { method: "DELETE" }),
     async restore(id: number): Promise<CatalogProduct> {
       return (
         await request<{ data: CatalogProduct }>(
-          `/admin/products/${id}/restore`,
+          apiEndpoints.productRestore(id),
           { method: "POST" },
         )
       ).data;
@@ -203,7 +208,7 @@ export function createProductsClient(request: Request) {
       const body = new FormData();
       body.append("image", file);
       return (
-        await request<{ data: { image: string } }>("/admin/product-images", {
+        await request<{ data: { image: string } }>(apiEndpoints.productImages, {
           method: "POST",
           body,
           signal,

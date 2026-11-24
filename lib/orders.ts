@@ -1,4 +1,4 @@
-import { type createApiClient } from "./api.ts";
+import { apiEndpoints, type createApiClient } from "./api.ts";
 
 export const orderStatuses = [
   "Awaiting Payment",
@@ -95,7 +95,7 @@ export function orderListPath(
     query.set("status", filters.status);
   if (filters.payment_status && filters.payment_status !== "All")
     query.set("payment_status", filters.payment_status);
-  return `/admin/orders?${query.toString()}`;
+  return `${apiEndpoints.orders}?${query.toString()}`;
 }
 
 export function nextOrderStatus(
@@ -121,7 +121,7 @@ export function createOrdersClient(request: Request) {
       if (status === "Cancelled" && cancelReason?.trim()) {
         payload.cancel_reason = cancelReason.trim();
       }
-      const result = await request<{ data: ApiOrder }>(`/admin/orders/${id}`, {
+      const result = await request<{ data: ApiOrder }>(apiEndpoints.order(id), {
         method: "PATCH",
         body: JSON.stringify(payload),
       });

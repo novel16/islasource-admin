@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
-import { ApiError } from "@/lib/api";
+import { ApiError, apiEndpoints } from "@/lib/api";
 import { money, shortDate } from "@/lib/data";
 import { createQuotationsClient } from "@/lib/quotations";
 import {
@@ -215,7 +215,7 @@ function LiveRfqDetail({ id }: { id: number }) {
   const { settings, notify } = useWorkspace();
   const router = useRouter();
   const { data, error, loading, retry } = useApiResource<{ data: ApiRfq }>(
-    `/admin/rfqs/${id}`,
+    apiEndpoints.rfq(id),
   );
   const [savedRfq, setSavedRfq] = useState<ApiRfq | null>(null);
   const [statusSaving, setStatusSaving] = useState(false);

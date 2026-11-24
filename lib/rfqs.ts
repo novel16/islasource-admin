@@ -1,4 +1,4 @@
-import { ApiError, type createApiClient } from "./api.ts";
+import { ApiError, apiEndpoints, type createApiClient } from "./api.ts";
 import { type ApiQuotationSummary } from "./quotations.ts";
 
 export const rfqStatuses = [
@@ -71,7 +71,7 @@ export function rfqListPath(
   if (filters.search?.trim()) query.set("search", filters.search.trim());
   if (filters.status && filters.status !== "All")
     query.set("status", filters.status);
-  return `/admin/rfqs?${query.toString()}`;
+  return `${apiEndpoints.rfqs}?${query.toString()}`;
 }
 
 type Request = ReturnType<typeof createApiClient>["request"];
@@ -79,7 +79,7 @@ type Request = ReturnType<typeof createApiClient>["request"];
 export function createRfqsClient(request: Request) {
   return {
     async updateStatus(id: number, status: RfqStatus): Promise<ApiRfq> {
-      const result = await request<{ data: ApiRfq }>(`/admin/rfqs/${id}`, {
+      const result = await request<{ data: ApiRfq }>(apiEndpoints.rfq(id), {
         method: "PATCH",
         body: JSON.stringify({ status }),
       });
@@ -95,7 +95,7 @@ export function createRfqsClient(request: Request) {
         );
       }
       const result = await request<{ data: ApiRfqNote }>(
-        `/admin/rfqs/${id}/notes`,
+        apiEndpoints.rfqNotes(id),
         {
           method: "POST",
           body: JSON.stringify({ body: trimmed }),

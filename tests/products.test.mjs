@@ -140,13 +140,13 @@ test("unsupported or oversized image input never reaches the upload endpoint", a
 
 test("product images resolve only supplied assets and the configured API upload directory", () => {
   assert.equal(
-    productImageSrc("/images/crab.jpg", "http://127.0.0.1:8000/api/v1"),
+    productImageSrc("/images/crab.jpg", "http://127.0.0.1:8000"),
     "/images/crab.jpg",
   );
   assert.equal(
     productImageSrc(
       "/storage/products/generated.jpg",
-      "http://127.0.0.1:8000/api/v1",
+      "http://127.0.0.1:8000",
     ),
     "http://127.0.0.1:8000/storage/products/generated.jpg",
   );
@@ -157,7 +157,7 @@ test("product images resolve only supplied assets and the configured API upload 
     "javascript:alert(1)",
   ]) {
     assert.equal(
-      productImageSrc(bad, "https://api.example/api/v1"),
+      productImageSrc(bad, "https://api.example"),
       "/images/squid.jpg",
     );
   }

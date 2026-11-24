@@ -9,7 +9,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { createApiClient } from "@/lib/api";
+import { API_BASE_URL, createApiClient } from "@/lib/api";
 import { createAuthSession, type AuthSnapshot } from "@/lib/auth-session";
 
 type AuthContext = AuthSnapshot &
@@ -22,9 +22,7 @@ const Context = createContext<AuthContext | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session] = useState(() =>
     createAuthSession(
-      createApiClient(
-        process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1",
-      ),
+      createApiClient(API_BASE_URL),
       () => window.sessionStorage,
     ),
   );

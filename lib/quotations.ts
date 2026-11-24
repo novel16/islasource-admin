@@ -1,4 +1,4 @@
-import { type createApiClient } from "./api.ts";
+import { apiEndpoints, type createApiClient } from "./api.ts";
 
 export const quotationStatuses = [
   "Draft",
@@ -131,7 +131,7 @@ export function quotationListPath(
   if (filters.status && filters.status !== "All")
     query.set("status", filters.status);
   if (filters.rfq_id) query.set("rfq_id", String(filters.rfq_id));
-  return `/admin/quotations?${query.toString()}`;
+  return `${apiEndpoints.quotations}?${query.toString()}`;
 }
 
 export function formatValidityHours(hours: number): string {
@@ -238,7 +238,7 @@ export function createQuotationsClient(request: Request) {
       } = {},
     ): Promise<ApiQuotation> {
       const result = await request<{ data: ApiQuotation }>(
-        `/admin/rfqs/${rfqId}/quotations`,
+        apiEndpoints.rfqQuotations(rfqId),
         {
           method: "POST",
           body: JSON.stringify(defaults),
@@ -251,7 +251,7 @@ export function createQuotationsClient(request: Request) {
       payload: UpdateQuotationPayload,
     ): Promise<ApiQuotation> {
       const result = await request<{ data: ApiQuotation }>(
-        `/admin/quotations/${id}`,
+        apiEndpoints.quotation(id),
         {
           method: "PATCH",
           body: JSON.stringify(payload),
@@ -260,24 +260,24 @@ export function createQuotationsClient(request: Request) {
       return result.data;
     },
     discard: (id: number) =>
-      request<void>(`/admin/quotations/${id}`, { method: "DELETE" }),
+      request<void>(apiEndpoints.quotation(id), { method: "DELETE" }),
     async send(id: number): Promise<ApiQuotation> {
       const result = await request<{ data: ApiQuotation }>(
-        `/admin/quotations/${id}/send`,
+        apiEndpoints.quotationSend(id),
         { method: "POST" },
       );
       return result.data;
     },
     async resend(id: number): Promise<ApiQuotation> {
       const result = await request<{ data: ApiQuotation }>(
-        `/admin/quotations/${id}/resend`,
+        apiEndpoints.quotationResend(id),
         { method: "POST" },
       );
       return result.data;
     },
     async cancel(id: number, reason = ""): Promise<ApiQuotation> {
       const result = await request<{ data: ApiQuotation }>(
-        `/admin/quotations/${id}/cancel`,
+        apiEndpoints.quotationCancel(id),
         {
           method: "POST",
           body: JSON.stringify({ reason: reason.trim() }),
@@ -287,7 +287,7 @@ export function createQuotationsClient(request: Request) {
     },
     async revise(id: number): Promise<ApiQuotation> {
       const result = await request<{ data: ApiQuotation }>(
-        `/admin/quotations/${id}/revise`,
+        apiEndpoints.quotationRevise(id),
         { method: "POST" },
       );
       return result.data;

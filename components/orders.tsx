@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ApiError } from "@/lib/api";
+import { ApiError, apiEndpoints } from "@/lib/api";
 import { money, shortDate } from "@/lib/data";
 import {
   createOrdersClient,
@@ -215,7 +215,7 @@ function LiveOrderDetail({ id }: { id: number }) {
   const { request } = useAuth();
   const { notify } = useWorkspace();
   const { data, error, loading, retry } = useApiResource<{ data: ApiOrder }>(
-    `/admin/orders/${id}`,
+    apiEndpoints.order(id),
   );
   const [savedOrder, setSavedOrder] = useState<ApiOrder | null>(null);
   const [busy, setBusy] = useState(false);

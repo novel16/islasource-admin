@@ -1,5 +1,6 @@
 import {
   ApiError,
+  apiEndpoints,
   type AdminUser,
   type ApiOptions,
   type LoginCredentials,
@@ -201,7 +202,7 @@ export function createAuthSession(
     let message = "You’re signed out.";
     if (token) {
       try {
-        await api.request("/admin/auth/logout", {
+        await api.request(apiEndpoints.authLogout, {
           method: "POST",
           token,
           keepalive: true,

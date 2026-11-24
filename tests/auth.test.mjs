@@ -29,7 +29,7 @@ function memoryStorage() {
 
 function setup(t, fetcher, storage = memoryStorage()) {
   const session = createAuthSession(
-    createApiClient("http://api.example.test/api/v1", fetcher),
+    createApiClient("http://api.example.test", fetcher),
     () => storage,
   );
   t.after(() => session.dispose());
@@ -38,7 +38,7 @@ function setup(t, fetcher, storage = memoryStorage()) {
 
 test("login sends JSON credentials without cookies or a bearer header", async () => {
   const client = createApiClient(
-    "http://api.example.test/api/v1/",
+    "http://api.example.test/",
     async (url, init) => {
       assert.equal(url, "http://api.example.test/api/v1/admin/auth/login");
       assert.equal(init.method, "POST");
@@ -60,7 +60,7 @@ test("login sends JSON credentials without cookies or a bearer header", async ()
 test("protected API requests attach the token only to the configured API", async () => {
   let calls = 0;
   const client = createApiClient(
-    "http://api.example.test/api/v1",
+    "http://api.example.test",
     async (url, init) => {
       calls++;
       assert.equal(url, "http://api.example.test/api/v1/admin/auth/me");
@@ -82,7 +82,7 @@ test("protected API requests attach the token only to the configured API", async
 });
 
 test("validation errors preserve field feedback while server failures stay generic", async () => {
-  const client = createApiClient("http://api.example.test/api/v1", async () =>
+  const client = createApiClient("http://api.example.test", async () =>
     json(
       {
         message: "The provided credentials are incorrect.",
@@ -98,7 +98,7 @@ test("validation errors preserve field feedback while server failures stay gener
     ]);
     return true;
   });
-  const broken = createApiClient("http://api.example.test/api/v1", async () =>
+  const broken = createApiClient("http://api.example.test", async () =>
     json({ message: "SQL details and private configuration" }, 500),
   );
   await assert.rejects(broken.login(credentials), (error) => {
@@ -110,7 +110,7 @@ test("validation errors preserve field feedback while server failures stay gener
 
 test("network failures and malformed successful responses become usable auth errors", async () => {
   const offline = createApiClient(
-    "http://api.example.test/api/v1",
+    "http://api.example.test",
     async () => {
       throw new TypeError("fetch failed");
     },
@@ -120,7 +120,7 @@ test("network failures and malformed successful responses become usable auth err
     (error) => error instanceof ApiError && error.status === 0,
   );
   const malformed = createApiClient(
-    "http://api.example.test/api/v1",
+    "http://api.example.test",
     async () => json({ data: { access_token: "broken" } }),
   );
   await assert.rejects(malformed.login(credentials), ApiError);
