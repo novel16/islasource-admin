@@ -11,6 +11,7 @@ test("RFQ list query encodes search, status, and pagination while omitting All s
   assert.deepEqual(rfqStatuses, [
     "New",
     "Reviewing",
+    "Waiting",
     "Ready",
     "Quoted",
     "Closed",
@@ -87,4 +88,27 @@ test("RFQ client rejects empty or oversized notes before calling the API", async
     return true;
   });
   assert.equal(called, false);
+});
+
+test("RFQ client sends supply reschedule and unavailable notices via POST", async () => {
+  const calls = [];
+  const client = createRfqsClient(async (path, options) => {
+    calls.push({ path, options });
+    return { data: { id: 12, status: "Waiting", schedule_status: "Proposed" } };
+  });
+
+  const updated = await client.sendSupplyNotice(12, {
+    mode: "reschedule",
+    proposed_available_date: "2026-12-01",
+    proposed_delivery_date: "2026-12-02",
+    notice: "  Fresh catch expected Tuesday  ",
+  });
+  assert.equal(updated.schedule_status, "Proposed");
+  assert.equal(calls[0].path, "/admin/rfqs/12/supply-notice");
+  assert.deepEqual(JSON.parse(calls[0].options.body), {
+    mode: "reschedule",
+    proposed_available_date: "2026-12-01",
+    proposed_delivery_date: "2026-12-02",
+    notice: "Fresh catch expected Tuesday",
+  });
 });

@@ -50,6 +50,7 @@ export type ApiQuotation = {
   deposit_percent: number;
   deposit_centavos: number;
   balance_centavos: number;
+  confirmed_delivery_date: string | null;
   validity_hours: number;
   valid_until: string | null;
   terms: string;
@@ -73,6 +74,9 @@ export type ApiQuotation = {
     phone: string;
     location: string;
     requested_delivery_date: string | null;
+    proposed_available_date?: string | null;
+    proposed_delivery_date?: string | null;
+    schedule_status?: string | null;
   };
   items?: ApiQuotationItem[];
   versions?: ApiQuotationSummary[];
@@ -103,6 +107,7 @@ export type UpdateQuotationPayload = {
   markup_percent: string;
   delivery_centavos: number;
   deposit_percent: number;
+  confirmed_delivery_date?: string | null;
   validity_hours: number;
   terms: string;
   items: {

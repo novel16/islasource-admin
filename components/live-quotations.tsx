@@ -55,6 +55,7 @@ type DraftFormState = {
   markup_percent: string;
   delivery_pesos: string;
   deposit_percent: string;
+  confirmed_delivery_date: string;
   validity_hours: string;
   terms: string;
   items: EditableLine[];
@@ -76,6 +77,7 @@ function formFromQuotation(q: ApiQuotation): DraftFormState {
     markup_percent: String(Number(q.markup_percent)),
     delivery_pesos: centavosToInput(q.delivery_centavos),
     deposit_percent: String(q.deposit_percent),
+    confirmed_delivery_date: q.confirmed_delivery_date ?? "",
     validity_hours: String(q.validity_hours),
     terms: q.terms,
     items: (q.items ?? []).map((item) => ({
@@ -99,6 +101,7 @@ function buildUpdatePayload(form: DraftFormState): UpdateQuotationPayload {
       100,
       Math.max(0, Math.round(Number(form.deposit_percent || 0))),
     ),
+    confirmed_delivery_date: form.confirmed_delivery_date.trim() || null,
     validity_hours: Math.min(
       720,
       Math.max(1, Math.round(Number(form.validity_hours || 48))),
@@ -851,6 +854,19 @@ function LiveQuotationEditor({ initial }: { initial: ApiQuotation }) {
                   />
                 </Field>
                 <Field
+                  label="Confirmed delivery date"
+                  hint="Customer sees this target delivery date on the quotation and order."
+                >
+                  <input
+                    type="date"
+                    disabled={readOnly || busy}
+                    value={form.confirmed_delivery_date}
+                    onChange={(event) =>
+                      updateField("confirmed_delivery_date", event.target.value)
+                    }
+                  />
+                </Field>
+                <Field
                   label="Quotation validity (hours)"
                   hint={`Default 48 hours (2 days). Selected: ${formatValidityHours(Math.max(1, Number(form.validity_hours) || 48))}.`}
                   className="full"
@@ -1032,6 +1048,17 @@ function LiveQuotationEditor({ initial }: { initial: ApiQuotation }) {
                       : "Not specified"}
                   </dd>
                 </div>
+                {quotation.rfq.proposed_delivery_date && (
+                  <div>
+                    <dt>Rescheduled delivery</dt>
+                    <dd>
+                      {shortDate(quotation.rfq.proposed_delivery_date)}
+                      {quotation.rfq.schedule_status
+                        ? ` (${quotation.rfq.schedule_status})`
+                        : ""}
+                    </dd>
+                  </div>
+                )}
               </dl>
             </Card>
           )}

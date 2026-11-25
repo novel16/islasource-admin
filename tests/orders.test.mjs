@@ -87,4 +87,21 @@ test("orders client updates status via PATCH with optional trimmed cancel reason
     status: "Cancelled",
     cancel_reason: "Unpaid after expiry",
   });
+
+  const msgClient = createOrdersClient(async (path, options) => {
+    calls.push({ path, options });
+    return {
+      data: {
+        id: 1,
+        sender_type: "admin",
+        sender_name: "Admin",
+        body: "Waybill #123",
+        created_at: "2026-11-25T10:00:00Z",
+      },
+    };
+  });
+  const sent = await msgClient.sendMessage(9, "  Waybill #123  ");
+  assert.equal(sent.body, "Waybill #123");
+  assert.equal(calls[2].path, "/admin/orders/9/messages");
+  assert.deepEqual(JSON.parse(calls[2].options.body), { body: "Waybill #123" });
 });

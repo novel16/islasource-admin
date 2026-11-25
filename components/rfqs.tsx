@@ -24,12 +24,29 @@ import {
   ButtonLink,
   Card,
   DataTable,
+  Dialog,
   EmptyState,
+  Field,
   PageHeader,
   SearchFilter,
 } from "./ui";
 import { Icon } from "./ui/icon";
 import { useApiResource } from "./use-api-resource";
+
+const supplyReasonPresets = [
+  {
+    label: "Rough seas / weather delay",
+    text: "Rough seas around Bantayan Island prevented our fishermen from going out today. We expect fresh catch on the new schedule and will send your quotation right away once confirmed.",
+  },
+  {
+    label: "No catch for target date",
+    text: "Our local suppliers had no fresh catch landed for your requested delivery date. We can source this on the next catch schedule if the updated dates work for you.",
+  },
+  {
+    label: "Out of season",
+    text: "This seafood item is currently out of season on Bantayan Island. Feel free to browse our available fresh and dried selections or submit a new request anytime.",
+  },
+];
 
 function initialsFor(name: string): string {
   return (
@@ -224,10 +241,20 @@ function LiveRfqDetail({ id }: { id: number }) {
   const [noteBody, setNoteBody] = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteError, setNoteError] = useState("");
+  const [showSupplyModal, setShowSupplyModal] = useState(false);
+  const [supplyMode, setSupplyMode] = useState<"reschedule" | "unavailable">(
+    "reschedule",
+  );
+  const [availableDate, setAvailableDate] = useState("");
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [supplyNotice, setSupplyNotice] = useState(supplyReasonPresets[0].text);
+  const [supplySaving, setSupplySaving] = useState(false);
+  const [supplyError, setSupplyError] = useState("");
 
   const rfq = savedRfq?.id === id ? savedRfq : (data?.data ?? null);
   const linkedQuotations = rfq?.quotations ?? [];
   const draftQuotation = linkedQuotations.find((q) => q.status === "Draft");
+  const sentQuotation = linkedQuotations.find((q) => q.status === "Sent");
   const acceptedQuotation = linkedQuotations.find(
     (q) => q.status === "Accepted",
   );
@@ -312,6 +339,58 @@ function LiveRfqDetail({ id }: { id: number }) {
     }
   }
 
+  function openSupplyDialog() {
+    if (!rfq) return;
+    setSupplyMode("reschedule");
+    setAvailableDate(rfq.proposed_available_date ?? "");
+    setDeliveryDate(rfq.proposed_delivery_date ?? "");
+    setSupplyNotice(rfq.schedule_notice || supplyReasonPresets[0].text);
+    setSupplyError("");
+    setShowSupplyModal(true);
+  }
+
+  async function submitSupplyNotice(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!rfq || supplySaving) return;
+    setSupplySaving(true);
+    setSupplyError("");
+    try {
+      const updated = await createRfqsClient(request).sendSupplyNotice(rfq.id, {
+        mode: supplyMode,
+        proposed_available_date: availableDate,
+        proposed_delivery_date: deliveryDate,
+        notice: supplyNotice,
+      });
+      setSavedRfq(updated);
+      setShowSupplyModal(false);
+      notify(
+        updated.email_sent === false
+          ? "Schedule saved, but customer email failed to send."
+          : supplyMode === "reschedule"
+            ? `New schedule emailed to ${updated.email}.`
+            : `Unavailable notice emailed and request closed.`,
+      );
+    } catch (failure) {
+      setSupplyError(
+        failure instanceof ApiError
+          ? Object.values(failure.errors).flat()[0] || failure.message
+          : "We couldn’t send the supply notice. Please try again.",
+      );
+    } finally {
+      setSupplySaving(false);
+    }
+  }
+
+  async function copyScheduleLink() {
+    if (!rfq?.schedule_url) return;
+    try {
+      await navigator.clipboard.writeText(rfq.schedule_url);
+      notify("Customer schedule confirmation link copied.");
+    } catch {
+      notify("Copy failed — select and copy the link manually.");
+    }
+  }
+
   if (loading) {
     return (
       <>
@@ -364,6 +443,16 @@ function LiveRfqDetail({ id }: { id: number }) {
                 </option>
               ))}
             </select>
+            {!acceptedQuotation && !sentQuotation && (
+              <Button
+                variant="secondary"
+                disabled={creatingQuote || statusSaving}
+                onClick={openSupplyDialog}
+              >
+                <Icon name="clock" size={16} />
+                Unavailable / reschedule
+              </Button>
+            )}
             {(draftQuotation ||
               acceptedQuotation ||
               rfq.status !== "Closed") && (
@@ -423,6 +512,84 @@ function LiveRfqDetail({ id }: { id: number }) {
               </div>
             )}
           </Card>
+          {rfq.schedule_status && (
+            <Card
+              title="Supply & schedule update"
+              subtitle="Customer notification for unavailable or delayed catch"
+              action={
+                <Badge>
+                  {rfq.schedule_status === "Proposed"
+                    ? "Proposed"
+                    : rfq.schedule_status === "Accepted"
+                      ? "Accepted"
+                      : rfq.schedule_status === "Declined"
+                        ? "Declined"
+                        : "Closed"}
+                </Badge>
+              }
+            >
+              <div className="schedule-summary-box">
+                {(rfq.proposed_available_date || rfq.proposed_delivery_date) && (
+                  <div className="schedule-dates-row">
+                    <div>
+                      <small>Estimated available date</small>
+                      <strong>
+                        {rfq.proposed_available_date
+                          ? shortDate(rfq.proposed_available_date)
+                          : "—"}
+                      </strong>
+                    </div>
+                    <div>
+                      <small>Proposed delivery date</small>
+                      <strong>
+                        {rfq.proposed_delivery_date
+                          ? shortDate(rfq.proposed_delivery_date)
+                          : "—"}
+                      </strong>
+                    </div>
+                  </div>
+                )}
+                {rfq.schedule_notice && <p>{rfq.schedule_notice}</p>}
+                {rfq.schedule_status === "Accepted" && (
+                  <p>
+                    <strong>Customer agreed to wait</strong>
+                    {rfq.schedule_responded_at
+                      ? ` on ${new Date(rfq.schedule_responded_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}`
+                      : ""}
+                    {rfq.schedule_customer_note
+                      ? ` · “${rfq.schedule_customer_note}”`
+                      : "."}
+                  </p>
+                )}
+                {rfq.schedule_status === "Declined" && (
+                  <p>
+                    <strong>Customer cancelled after schedule update</strong>
+                    {rfq.schedule_customer_note
+                      ? ` · “${rfq.schedule_customer_note}”`
+                      : "."}
+                  </p>
+                )}
+                {rfq.schedule_status === "Proposed" && rfq.schedule_url && (
+                  <div className="share-url-row">
+                    <input
+                      type="text"
+                      readOnly
+                      aria-label="Customer schedule response link"
+                      value={rfq.schedule_url}
+                      onFocus={(event) => event.currentTarget.select()}
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => void copyScheduleLink()}
+                    >
+                      Copy link
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
           {linkedQuotations.length > 0 && (
             <Card
               title="Quotations"
@@ -583,6 +750,124 @@ function LiveRfqDetail({ id }: { id: number }) {
           </div>
         </aside>
       </div>
+      {showSupplyModal && (
+        <Dialog
+          title="Notify customer about supply availability"
+          onClose={() => !supplySaving && setShowSupplyModal(false)}
+        >
+          <form onSubmit={(event) => void submitSupplyNotice(event)}>
+            <div className="dialog-body">
+              <div className="mode-toggle" role="group" aria-label="Notice type">
+                <button
+                  type="button"
+                  className={supplyMode === "reschedule" ? "selected" : ""}
+                  onClick={() => setSupplyMode("reschedule")}
+                >
+                  Propose new schedule (waitlist)
+                </button>
+                <button
+                  type="button"
+                  className={supplyMode === "unavailable" ? "selected" : ""}
+                  onClick={() => {
+                    setSupplyMode("unavailable");
+                    setSupplyNotice(supplyReasonPresets[2].text);
+                  }}
+                >
+                  Close as unavailable
+                </button>
+              </div>
+              {supplyMode === "reschedule" && (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 12,
+                  }}
+                >
+                  <Field label="Estimated catch available">
+                    <input
+                      type="date"
+                      required
+                      disabled={supplySaving}
+                      value={availableDate}
+                      onChange={(event) => {
+                        setAvailableDate(event.target.value);
+                        if (!deliveryDate || deliveryDate < event.target.value) {
+                          setDeliveryDate(event.target.value);
+                        }
+                      }}
+                    />
+                  </Field>
+                  <Field label="Proposed delivery date">
+                    <input
+                      type="date"
+                      required
+                      min={availableDate || undefined}
+                      disabled={supplySaving}
+                      value={deliveryDate}
+                      onChange={(event) => setDeliveryDate(event.target.value)}
+                    />
+                  </Field>
+                </div>
+              )}
+              <div>
+                <div
+                  className="preset-buttons"
+                  style={{ marginBottom: 10 }}
+                  aria-label="Quick message templates"
+                >
+                  {supplyReasonPresets.map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      disabled={supplySaving}
+                      onClick={() => setSupplyNotice(preset.text)}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+                <Field
+                  label="Message to customer"
+                  hint="Include substitute suggestions if other fresh catch is available."
+                >
+                  <textarea
+                    rows={4}
+                    maxLength={2000}
+                    required
+                    disabled={supplySaving}
+                    value={supplyNotice}
+                    onChange={(event) => setSupplyNotice(event.target.value)}
+                  />
+                </Field>
+              </div>
+              {supplyError && (
+                <p className="form-error" role="alert">
+                  {supplyError}
+                </p>
+              )}
+            </div>
+            <div className="dialog-footer">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={supplySaving}
+                onClick={() => setShowSupplyModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={supplySaving}>
+                <Icon name="mail" size={16} />
+                {supplySaving
+                  ? "Sending…"
+                  : supplyMode === "reschedule"
+                    ? "Send schedule & email customer"
+                    : "Close & email customer"}
+              </Button>
+            </div>
+          </form>
+        </Dialog>
+      )}
     </>
   );
 }

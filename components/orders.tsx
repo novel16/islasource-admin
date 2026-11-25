@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { ApiError, apiEndpoints } from "@/lib/api";
 import { money, shortDate } from "@/lib/data";
 import {
@@ -10,6 +10,7 @@ import {
   orderListPath,
   orderStatuses,
   type ApiOrder,
+  type ApiOrderMessage,
   type ApiOrderPage,
 } from "@/lib/orders";
 import { useAuth } from "./auth-provider";
@@ -130,9 +131,11 @@ export function OrderList() {
                 <td>
                   {order.location}
                   <small>
-                    {order.requested_delivery_date
-                      ? shortDate(order.requested_delivery_date)
-                      : "Date flexible"}
+                    {order.confirmed_delivery_date
+                      ? shortDate(order.confirmed_delivery_date)
+                      : order.requested_delivery_date
+                        ? shortDate(order.requested_delivery_date)
+                        : "Date flexible"}
                   </small>
                 </td>
                 <td className="money">{money(order.total_centavos)}</td>
@@ -222,6 +225,9 @@ function LiveOrderDetail({ id }: { id: number }) {
   const [actionError, setActionError] = useState("");
   const [showCancel, setShowCancel] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [messageBody, setMessageBody] = useState("");
+  const [messageSaving, setMessageSaving] = useState(false);
+  const [messageError, setMessageError] = useState("");
 
   const order = savedOrder?.id === id ? savedOrder : (data?.data ?? null);
 
@@ -321,6 +327,36 @@ function LiveOrderDetail({ id }: { id: number }) {
     }
   }
 
+  async function submitMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!order || messageSaving) return;
+    setMessageSaving(true);
+    setMessageError("");
+    try {
+      const created: ApiOrderMessage = await createOrdersClient(
+        request,
+      ).sendMessage(order.id, messageBody);
+      setSavedOrder({
+        ...order,
+        messages: [...(order.messages ?? []), created],
+      });
+      setMessageBody("");
+      notify("Message posted and emailed to customer.");
+    } catch (failure) {
+      setMessageError(
+        failure instanceof ApiError
+          ? Object.values(failure.errors).flat()[0] || failure.message
+          : "We couldn’t send this message. Please try again.",
+      );
+    } finally {
+      setMessageSaving(false);
+    }
+  }
+
+  const messages = order.messages ?? [];
+  const messagingOpen =
+    order.status !== "Completed" && order.status !== "Cancelled";
+
   return (
     <>
       <BackLink href="/orders">All orders</BackLink>
@@ -415,11 +451,17 @@ function LiveOrderDetail({ id }: { id: number }) {
                 <p>{order.phone} · {order.email}</p>
               </div>
               <div>
-                <span className="eyebrow">PREFERRED DELIVERY</span>
+                <span className="eyebrow">
+                  {order.confirmed_delivery_date
+                    ? "CONFIRMED DELIVERY"
+                    : "PREFERRED DELIVERY"}
+                </span>
                 <strong>
-                  {order.requested_delivery_date
-                    ? shortDate(order.requested_delivery_date)
-                    : "Flexible"}
+                  {order.confirmed_delivery_date
+                    ? shortDate(order.confirmed_delivery_date)
+                    : order.requested_delivery_date
+                      ? shortDate(order.requested_delivery_date)
+                      : "Flexible"}
                 </strong>
                 <p>
                   <Link
@@ -433,6 +475,82 @@ function LiveOrderDetail({ id }: { id: number }) {
               </div>
             </div>
           </Card>
+          <div id="messages">
+            <Card
+              title="Customer messages"
+              subtitle="Direct follow-ups on this order · Customer receives an email notification with reply link"
+              action={
+                <Badge>{messagingOpen ? "Active" : "Closed"}</Badge>
+              }
+            >
+              {messages.length > 0 ? (
+                <div className="message-thread">
+                  {messages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`message-item ${msg.sender_type === "admin" ? "from-admin" : ""}`}
+                    >
+                      <div className="message-meta">
+                        <strong>
+                          {msg.sender_name}{" "}
+                          <small>
+                            ({msg.sender_type === "admin" ? "IslaSource" : "Customer"})
+                          </small>
+                        </strong>
+                        <span>{formatDateTime(msg.created_at)}</span>
+                      </div>
+                      <p>{msg.body}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="notes-list">
+                  <p className="muted">
+                    No messages yet. Share packing photos/waybill details, ETA,
+                    or answer customer questions here.
+                  </p>
+                </div>
+              )}
+              {messagingOpen ? (
+                <form
+                  className="note-form"
+                  onSubmit={(event) => void submitMessage(event)}
+                  aria-busy={messageSaving}
+                >
+                  <label className="sr-only" htmlFor="order-message-body">
+                    Message to customer
+                  </label>
+                  <textarea
+                    id="order-message-body"
+                    placeholder="Send a delivery update, waybill number, or follow-up question to the customer…"
+                    rows={3}
+                    maxLength={2000}
+                    required
+                    disabled={messageSaving}
+                    value={messageBody}
+                    onChange={(event) => {
+                      setMessageBody(event.target.value);
+                      if (messageError) setMessageError("");
+                    }}
+                  />
+                  {messageError && (
+                    <p className="form-error" role="alert">
+                      {messageError}
+                    </p>
+                  )}
+                  <Button type="submit" disabled={messageSaving}>
+                    <Icon name="mail" size={16} />
+                    {messageSaving ? "Sending…" : "Send & email customer"}
+                  </Button>
+                </form>
+              ) : (
+                <div className="soft-note">
+                  Messaging is closed because this order is{" "}
+                  {order.status.toLowerCase()}.
+                </div>
+              )}
+            </Card>
+          </div>
           <Card title="Order timeline" subtitle="Verified milestones">
             <ol className="timeline">
               <li>

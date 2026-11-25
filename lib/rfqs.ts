@@ -4,12 +4,19 @@ import { type ApiQuotationSummary } from "./quotations.ts";
 export const rfqStatuses = [
   "New",
   "Reviewing",
+  "Waiting",
   "Ready",
   "Quoted",
   "Closed",
 ] as const;
 
 export type RfqStatus = (typeof rfqStatuses)[number];
+export type RfqScheduleStatus =
+  | "Proposed"
+  | "Accepted"
+  | "Declined"
+  | "ClosedUnavailable"
+  | null;
 
 export type ApiRfqItem = {
   id: number;
@@ -36,8 +43,16 @@ export type ApiRfq = {
   phone: string;
   location: string;
   requested_delivery_date: string | null;
+  proposed_available_date?: string | null;
+  proposed_delivery_date?: string | null;
   notes: string;
+  schedule_notice?: string;
   status: RfqStatus;
+  schedule_status?: RfqScheduleStatus;
+  schedule_responded_at?: string | null;
+  schedule_customer_note?: string;
+  schedule_url?: string;
+  email_sent?: boolean;
   items: ApiRfqItem[];
   internal_notes?: ApiRfqNote[];
   quotations?: ApiQuotationSummary[];
@@ -99,6 +114,35 @@ export function createRfqsClient(request: Request) {
         {
           method: "POST",
           body: JSON.stringify({ body: trimmed }),
+        },
+      );
+      return result.data;
+    },
+    async sendSupplyNotice(
+      id: number,
+      payload: {
+        mode: "reschedule" | "unavailable";
+        proposed_available_date?: string | null;
+        proposed_delivery_date?: string | null;
+        notice: string;
+      },
+    ): Promise<ApiRfq> {
+      const result = await request<{ data: ApiRfq }>(
+        apiEndpoints.rfqSupplyNotice(id),
+        {
+          method: "POST",
+          body: JSON.stringify({
+            mode: payload.mode,
+            proposed_available_date:
+              payload.mode === "reschedule"
+                ? payload.proposed_available_date
+                : null,
+            proposed_delivery_date:
+              payload.mode === "reschedule"
+                ? payload.proposed_delivery_date
+                : null,
+            notice: payload.notice.trim(),
+          }),
         },
       );
       return result.data;

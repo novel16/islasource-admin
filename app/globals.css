@@ -972,6 +972,8 @@ td .table-primary {
   color: #77955f;
 }
 .status-reviewing,
+.status-waiting,
+.status-proposed,
 .status-sourcing,
 .status-processing,
 .status-draft {
@@ -1372,6 +1374,93 @@ td .table-primary {
   font-size: 11px;
   border-color: #e6ebde;
   margin-bottom: 11px;
+}
+.message-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 25px 18px;
+}
+.message-item {
+  border: 1px solid #e6ebde;
+  border-radius: 9px;
+  padding: 12px 15px;
+  background: #fcfdf9;
+}
+.message-item.from-admin {
+  background: #f1f5ed;
+  border-color: #dce6d4;
+}
+.message-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 10px;
+  color: #728664;
+}
+.message-meta strong {
+  font-weight: 600;
+  color: #4a6343;
+}
+.message-item p {
+  font-size: 12px;
+  color: #5b6f50;
+  line-height: 1.7;
+  white-space: pre-line;
+  margin: 0;
+}
+.schedule-summary-box {
+  padding: 0 25px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 12px;
+  color: #6c815e;
+}
+.schedule-dates-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f6f8f1;
+  border: 1px solid #e4eadc;
+  border-radius: 8px;
+}
+.schedule-dates-row small {
+  display: block;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #93a285;
+  margin-bottom: 3px;
+}
+.schedule-dates-row strong {
+  font-size: 12px;
+  color: #4d6747;
+}
+.mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.mode-toggle button {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #dfe6d7;
+  background: #fff;
+  color: #5b7250;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.mode-toggle button.selected {
+  background: var(--pine);
+  border-color: var(--pine);
+  color: #fff;
 }
 .customer-profile {
   display: flex;

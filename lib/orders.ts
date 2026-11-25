@@ -35,6 +35,14 @@ export type ApiOrderPayment = {
   created_at: string;
 };
 
+export type ApiOrderMessage = {
+  id: number;
+  sender_type: "admin" | "customer";
+  sender_name: string;
+  body: string;
+  created_at: string;
+};
+
 export type ApiOrder = {
   id: number;
   quotation_id: number;
@@ -48,6 +56,7 @@ export type ApiOrder = {
   phone: string;
   location: string;
   requested_delivery_date: string | null;
+  confirmed_delivery_date?: string | null;
   subtotal_centavos: number;
   delivery_centavos: number;
   total_centavos: number;
@@ -61,6 +70,7 @@ export type ApiOrder = {
   cancel_reason: string;
   items?: ApiOrderItem[];
   payments?: ApiOrderPayment[];
+  messages?: ApiOrderMessage[];
   created_at: string;
   updated_at: string;
 };
@@ -125,6 +135,16 @@ export function createOrdersClient(request: Request) {
         method: "PATCH",
         body: JSON.stringify(payload),
       });
+      return result.data;
+    },
+    async sendMessage(id: number, body: string): Promise<ApiOrderMessage> {
+      const result = await request<{ data: ApiOrderMessage }>(
+        apiEndpoints.orderMessages(id),
+        {
+          method: "POST",
+          body: JSON.stringify({ body: body.trim() }),
+        },
+      );
       return result.data;
     },
   };

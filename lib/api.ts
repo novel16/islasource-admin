@@ -18,6 +18,7 @@ export const apiEndpoints = {
   rfqs: "/admin/rfqs",
   rfq: (id: number) => `/admin/rfqs/${id}`,
   rfqNotes: (id: number) => `/admin/rfqs/${id}/notes`,
+  rfqSupplyNotice: (id: number) => `/admin/rfqs/${id}/supply-notice`,
   rfqQuotations: (id: number) => `/admin/rfqs/${id}/quotations`,
   quotations: "/admin/quotations",
   quotation: (id: number) => `/admin/quotations/${id}`,
@@ -27,6 +28,7 @@ export const apiEndpoints = {
   quotationRevise: (id: number) => `/admin/quotations/${id}/revise`,
   orders: "/admin/orders",
   order: (id: number) => `/admin/orders/${id}`,
+  orderMessages: (id: number) => `/admin/orders/${id}/messages`,
 } as const;
 
 export type AdminUser = { id: number; name: string; email: string };
