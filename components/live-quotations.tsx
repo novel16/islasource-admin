@@ -1005,7 +1005,11 @@ function LiveQuotationEditor({ initial }: { initial: ApiQuotation }) {
               </div>
               <div>
                 <dt>Delivery</dt>
-                <dd>{money(preview.delivery_centavos)}</dd>
+                <dd>
+                  {preview.delivery_centavos === 0
+                    ? "Free"
+                    : money(preview.delivery_centavos)}
+                </dd>
               </div>
             </dl>
             <div className="grand-total">
@@ -1118,7 +1122,11 @@ function LiveQuotationEditor({ initial }: { initial: ApiQuotation }) {
               </div>
               <div>
                 <dt>Delivery</dt>
-                <dd>{money(preview.delivery_centavos)}</dd>
+                <dd>
+                  {preview.delivery_centavos === 0
+                    ? "Free"
+                    : money(preview.delivery_centavos)}
+                </dd>
               </div>
               <div>
                 <dt>Total due (Full payment via QR Ph)</dt>

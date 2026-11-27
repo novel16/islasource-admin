@@ -627,7 +627,11 @@ function LiveOrderDetail({ id }: { id: number }) {
               </div>
               <div>
                 <dt>Delivery</dt>
-                <dd>{money(order.delivery_centavos)}</dd>
+                <dd>
+                  {order.delivery_centavos === 0
+                    ? "Free"
+                    : money(order.delivery_centavos)}
+                </dd>
               </div>
               <div className="price-divider">
                 <dt>Paid via QR Ph</dt>
