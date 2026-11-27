@@ -337,3 +337,46 @@ test("return destinations accept internal pages and reject external or looping U
     assert.equal(safeReturnPath(unsafe), "/");
   }
 });
+
+test("security client calls password change, token list, token revoke, and logout-all endpoints", async () => {
+  const { createSecurityClient } = await import("../lib/auth-session.ts");
+  const calls = [];
+  const security = createSecurityClient(async (path, options = {}) => {
+    calls.push({ path, options });
+    if (path === "/admin/auth/tokens" && !options.method) {
+      return {
+        data: [
+          {
+            id: 4,
+            device_name: "IslaSource admin",
+            is_current: true,
+            created_at: "2026-11-27T01:00:00Z",
+            last_used_at: null,
+            expires_at: "2026-11-27T13:00:00Z",
+          },
+        ],
+      };
+    }
+    return undefined;
+  });
+
+  await security.changePassword({
+    current_password: "old-password",
+    password: "new-password-123",
+    password_confirmation: "new-password-123",
+  });
+  assert.equal(calls[0].path, "/admin/auth/password");
+  assert.equal(calls[0].options.method, "POST");
+
+  const tokens = await security.listTokens();
+  assert.equal(tokens.length, 1);
+  assert.equal(tokens[0].is_current, true);
+
+  await security.revokeToken(9);
+  assert.equal(calls[2].path, "/admin/auth/tokens/9");
+  assert.equal(calls[2].options.method, "DELETE");
+
+  await security.logoutAll();
+  assert.equal(calls[3].path, "/admin/auth/logout-all");
+  assert.equal(calls[3].options.method, "POST");
+});

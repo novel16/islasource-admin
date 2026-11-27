@@ -10,6 +10,10 @@ export const apiEndpoints = {
   authLogin: "/admin/auth/login",
   authMe: "/admin/auth/me",
   authLogout: "/admin/auth/logout",
+  authLogoutAll: "/admin/auth/logout-all",
+  authPassword: "/admin/auth/password",
+  authTokens: "/admin/auth/tokens",
+  authToken: (id: number) => `/admin/auth/tokens/${id}`,
   products: "/admin/products",
   product: (id: number | string) =>
     `/admin/products/${encodeURIComponent(String(id))}`,

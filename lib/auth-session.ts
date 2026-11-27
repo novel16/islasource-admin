@@ -265,3 +265,38 @@ export function createAuthSession(
     },
   };
 }
+
+export type AdminSessionToken = {
+  id: number;
+  device_name: string;
+  is_current: boolean;
+  created_at: string | null;
+  last_used_at: string | null;
+  expires_at: string | null;
+};
+
+export function createSecurityClient(
+  request: ReturnType<typeof createApiClient>["request"],
+) {
+  return {
+    changePassword: (payload: {
+      current_password: string;
+      password: string;
+      password_confirmation: string;
+    }) =>
+      request<void>(apiEndpoints.authPassword, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    async listTokens(): Promise<AdminSessionToken[]> {
+      const result = await request<{ data: AdminSessionToken[] }>(
+        apiEndpoints.authTokens,
+      );
+      return result.data;
+    },
+    revokeToken: (id: number) =>
+      request<void>(apiEndpoints.authToken(id), { method: "DELETE" }),
+    logoutAll: () =>
+      request<void>(apiEndpoints.authLogoutAll, { method: "POST" }),
+  };
+}
