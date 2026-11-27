@@ -33,6 +33,7 @@ export const apiEndpoints = {
   orders: "/admin/orders",
   order: (id: number) => `/admin/orders/${id}`,
   orderMessages: (id: number) => `/admin/orders/${id}/messages`,
+  reportsSales: "/admin/reports/sales",
 } as const;
 
 export type AdminUser = { id: number; name: string; email: string };

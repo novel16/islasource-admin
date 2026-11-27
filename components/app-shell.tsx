@@ -22,6 +22,7 @@ const navigation = [
   { href: "/rfqs", label: "Quote requests", icon: "inbox" },
   { href: "/quotations", label: "Quotations", icon: "file" },
   { href: "/orders", label: "Orders", icon: "bag" },
+  { href: "/reports", label: "Reports", icon: "trend" },
   { href: "/products", label: "Products", icon: "box" },
   { href: "/settings", label: "Settings", icon: "settings" },
 ];

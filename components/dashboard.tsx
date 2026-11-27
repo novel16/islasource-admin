@@ -3,11 +3,18 @@
 import Link from "next/link";
 import { money } from "@/lib/data";
 import { orderListPath, type ApiOrderPage } from "@/lib/orders";
-import { productListPath, type ProductPage } from "@/lib/products";
 import { quotationListPath, type ApiQuotationPage } from "@/lib/quotations";
+import { salesReportPath, type ApiSalesReport } from "@/lib/reports";
 import { rfqListPath, type ApiRfqPage } from "@/lib/rfqs";
 import { useAuth } from "./auth-provider";
-import { Badge, ButtonLink, Card, DataTable, EmptyState, PageHeader } from "./ui";
+import {
+  Badge,
+  ButtonLink,
+  Card,
+  DataTable,
+  EmptyState,
+  PageHeader,
+} from "./ui";
 import { Icon } from "./ui/icon";
 import { useApiResource } from "./use-api-resource";
 
@@ -33,15 +40,13 @@ export function Dashboard() {
   const processingOrders = useApiResource<ApiOrderPage>(
     orderListPath({ status: "Processing", per_page: 3 }),
   );
-  const publishedProducts = useApiResource<ProductPage>(
-    productListPath({ status: "Published", per_page: 1 }),
-  );
+  const salesReport = useApiResource<ApiSalesReport>(salesReportPath());
 
   const totalRfqs = recentRfqs.data?.meta.total ?? 0;
   const newRfqCount = newRfqs.data?.meta.total ?? 0;
   const sentQuoteCount = sentQuotes.data?.meta.total ?? 0;
   const processingOrderCount = processingOrders.data?.meta.total ?? 0;
-  const publishedProductCount = publishedProducts.data?.meta.total ?? 0;
+  const salesSummary = salesReport.data?.data.summary;
 
   const firstNewRfq = newRfqs.data?.data[0];
   const latestRows = recentRfqs.data?.data ?? [];
@@ -54,13 +59,19 @@ export function Dashboard() {
       <PageHeader
         eyebrow={todayLabel}
         title={`Welcome back, ${firstName}.`}
-        description="Here’s what’s happening across your quote requests, quotations, and catalog."
+        description="Live overview of your quote requests, active orders, gross sales, and net profit."
         actions={
-          <ButtonLink href="/rfqs">
-            <Icon name="inbox" size={17} />
-            View quote requests
-            <Icon name="arrow" size={16} />
-          </ButtonLink>
+          <>
+            <ButtonLink href="/reports" variant="secondary">
+              <Icon name="trend" size={16} />
+              Sales reports
+            </ButtonLink>
+            <ButtonLink href="/rfqs">
+              <Icon name="inbox" size={17} />
+              View quote requests
+              <Icon name="arrow" size={16} />
+            </ButtonLink>
+          </>
         }
       />
       <div className="welcome-banner">
@@ -72,36 +83,51 @@ export function Dashboard() {
           <span>
             {newRfqCount > 0
               ? `You have ${newRfqCount} new quote ${newRfqCount === 1 ? "request" : "requests"} ready for sourcing.`
-              : sentQuoteCount > 0
-                ? `${sentQuoteCount} sent ${sentQuoteCount === 1 ? "quotation is" : "quotations are"} awaiting customer confirmation.`
-                : "Your quote inbox is up to date. New guest requests will appear here automatically."}
+              : processingOrderCount > 0
+                ? `${processingOrderCount} paid ${processingOrderCount === 1 ? "order is" : "orders are"} ready for island sourcing and packing.`
+                : sentQuoteCount > 0
+                  ? `${sentQuoteCount} sent ${sentQuoteCount === 1 ? "quotation is" : "quotations are"} awaiting customer confirmation.`
+                  : "Your workspace is up to date. New guest requests and payments appear here automatically."}
           </span>
         </p>
-        <Link href={firstNewRfq ? `/rfqs/${firstNewRfq.id}` : "/rfqs"}>
-          {firstNewRfq ? "Review request" : "Open inbox"}
+        <Link href={firstNewRfq ? `/rfqs/${firstNewRfq.id}` : "/reports"}>
+          {firstNewRfq ? "Review request" : "View sales"}
           <Icon name="arrow" size={17} />
         </Link>
       </div>
+
       <div className="stat-grid">
         {[
           {
-            label: "Quote requests",
-            value: recentRfqs.loading ? "—" : String(totalRfqs).padStart(2, "0"),
-            icon: "inbox",
-            note: newRfqs.loading
-              ? "Checking inbox…"
-              : `${newRfqCount} new ${newRfqCount === 1 ? "request" : "requests"}`,
-            detail: "Submitted from storefront",
+            label: "Gross sales",
+            value: salesReport.loading
+              ? "—"
+              : money(salesSummary?.gross_sales_centavos ?? 0),
+            icon: "wallet",
+            note: `${salesSummary?.paid_orders_count ?? 0} paid ${(salesSummary?.paid_orders_count ?? 0) === 1 ? "order" : "orders"}`,
+            detail: "Total QR Ph collected",
+            color: "blue",
+          },
+          {
+            label: "Net profit (markup)",
+            value: salesReport.loading
+              ? "—"
+              : money(salesSummary?.net_profit_centavos ?? 0),
+            icon: "trend",
+            note: "Markup / interest earned",
+            detail: `Handling ${money(salesSummary?.handling_centavos ?? 0)} · Delivery ${money(salesSummary?.delivery_centavos ?? 0)}`,
             color: "mint",
           },
           {
-            label: "Sent quotations",
-            value: sentQuotes.loading
+            label: "Quote requests",
+            value: recentRfqs.loading
               ? "—"
-              : String(sentQuoteCount).padStart(2, "0"),
-            icon: "file",
-            note: "Awaiting customer decision",
-            detail: "Valid for 2 days by default",
+              : String(totalRfqs).padStart(2, "0"),
+            icon: "inbox",
+            note: newRfqs.loading
+              ? "Checking inbox…"
+              : `${newRfqCount} new · ${sentQuoteCount} sent quotes`,
+            detail: "Submitted from storefront",
             color: "sand",
           },
           {
@@ -111,17 +137,7 @@ export function Dashboard() {
               : String(processingOrderCount).padStart(2, "0"),
             icon: "bag",
             note: "Full QR Ph payment verified",
-            detail: "Ready to source & pack",
-            color: "blue",
-          },
-          {
-            label: "Published seafood",
-            value: publishedProducts.loading
-              ? "—"
-              : String(publishedProductCount).padStart(2, "0"),
-            icon: "box",
-            note: "Visible in public catalog",
-            detail: "Sourced on request",
+            detail: `${salesSummary?.completed_orders_count ?? 0} completed all-time`,
             color: "peach",
           },
         ].map((s) => (
@@ -132,7 +148,9 @@ export function Dashboard() {
                 <Icon name={s.icon} size={19} />
               </div>
             </div>
-            <strong className="stat-value">{s.value}</strong>
+            <strong className="stat-value" style={{ fontSize: 26 }}>
+              {s.value}
+            </strong>
             <div className="stat-note">
               <Icon name="trend" size={14} />
               {s.note}
@@ -141,6 +159,40 @@ export function Dashboard() {
           </div>
         ))}
       </div>
+
+      <div className="summary-strip">
+        <span>
+          <strong>
+            {salesReport.loading
+              ? "—"
+              : money(salesSummary?.seafood_cost_centavos ?? 0)}
+          </strong>
+          Supplier seafood capital
+        </span>
+        <span>
+          <strong>
+            {salesReport.loading
+              ? "—"
+              : money(salesSummary?.handling_centavos ?? 0)}
+          </strong>
+          Handling & packing
+        </span>
+        <span>
+          <strong>
+            {salesReport.loading
+              ? "—"
+              : money(salesSummary?.delivery_centavos ?? 0)}
+          </strong>
+          Delivery collected
+        </span>
+        <span>
+          <Link className="text-link" href="/reports">
+            Open full sales report
+            <Icon name="arrow" size={15} />
+          </Link>
+        </span>
+      </div>
+
       <div className="dashboard-middle">
         <Card
           title="Fresh in your inbox"
@@ -204,7 +256,7 @@ export function Dashboard() {
         </Card>
         <Card
           title="Your attention, please"
-          subtitle="Pending requests and sent quotations"
+          subtitle="Pending requests, paid orders, and sent quotations"
           className="attention-card"
         >
           {attentionRfqs.map((rfq) => (
@@ -270,10 +322,10 @@ export function Dashboard() {
           {!attentionRfqs.length &&
             !attentionOrders.length &&
             !attentionQuotes.length && (
-            <p className="muted">
-              No pending requests, orders, or sent quotations right now.
-            </p>
-          )}
+              <p className="muted">
+                No pending requests, orders, or sent quotations right now.
+              </p>
+            )}
           <div className="attention-foot">
             <Icon name="leaf" size={16} />
             Sourced on request. Quoted with care.
