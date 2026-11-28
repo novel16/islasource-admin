@@ -18,6 +18,13 @@ export const productImages = [
   { src: "/images/dried-fish.jpg", label: "Dried fish" },
 ];
 
+export const MAX_GALLERY_IMAGES = 7;
+
+export type ProductGalleryImage = {
+  image: string;
+  image_alt: string;
+};
+
 export type ProductDraft = {
   name: string;
   category: (typeof productCategories)[number];
@@ -27,6 +34,7 @@ export type ProductDraft = {
   specs: string;
   image: string;
   image_alt: string;
+  gallery_images: ProductGalleryImage[];
   slug: string;
   meta_title: string;
   meta_description: string;
@@ -87,6 +95,7 @@ export const blankProduct: ProductDraft = {
   category: "Dried seafood",
   image: "/images/squid.jpg",
   image_alt: "",
+  gallery_images: [],
   unit: "kg",
   status: "Draft",
   description: "",
@@ -119,7 +128,11 @@ export function productListPath(filters: ProductFilters = {}): string {
   return `${apiEndpoints.products}?${query}`;
 }
 
-export function productPayload(input: ProductDraft): ProductDraft {
+export function productPayload(
+  input: Omit<ProductDraft, "gallery_images"> & {
+    gallery_images?: ProductGalleryImage[];
+  },
+): ProductDraft {
   return {
     name: input.name.trim(),
     category: input.category,
@@ -129,6 +142,13 @@ export function productPayload(input: ProductDraft): ProductDraft {
     specs: input.specs.trim(),
     image: input.image,
     image_alt: input.image_alt.trim(),
+    gallery_images: (input.gallery_images ?? [])
+      .filter((entry) => Boolean(entry?.image?.trim()))
+      .slice(0, MAX_GALLERY_IMAGES)
+      .map((entry) => ({
+        image: entry.image.trim(),
+        image_alt: (entry.image_alt ?? "").trim(),
+      })),
     slug: input.slug.trim().toLowerCase(),
     meta_title: input.meta_title.trim(),
     meta_description: input.meta_description.trim(),

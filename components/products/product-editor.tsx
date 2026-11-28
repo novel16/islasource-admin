@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
 import {
+  MAX_GALLERY_IMAGES,
   blankProduct,
   createProductsClient,
   productCategories,
@@ -32,10 +33,15 @@ export function ProductEditor({ initial }: { initial?: CatalogProduct }) {
   const [error, setError] = useState("");
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [saving, setSaving] = useState(false);
-  const [uploads, setUploads] = useState({ image: false, og_image: false });
+  const [uploads, setUploads] = useState({
+    image: false,
+    og_image: false,
+    gallery: false,
+  });
+  const [galleryError, setGalleryError] = useState("");
   const [isSaved, setIsSaved] = useState(false);
   const [archive, setArchive] = useState(false);
-  const busy = saving || uploads.image || uploads.og_image;
+  const busy = saving || uploads.image || uploads.og_image || uploads.gallery;
 
   function change(key: keyof ProductDraft, value: string | boolean) {
     setP((current) => ({
@@ -170,6 +176,85 @@ export function ProductEditor({ initial }: { initial?: CatalogProduct }) {
           : current.og_image,
     }));
     setErrors((current) => ({ ...current, image: [] }));
+    setIsSaved(false);
+  }
+
+  async function uploadGalleryFiles(
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const selected = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (!selected.length || busy) return;
+
+    const remaining = MAX_GALLERY_IMAGES - p.gallery_images.length;
+    if (remaining <= 0) {
+      setGalleryError(
+        `Maximum of ${MAX_GALLERY_IMAGES} extra gallery photos reached (8 total with cover).`,
+      );
+      return;
+    }
+
+    const client = createProductsClient(request);
+    setUploads((cur) => ({ ...cur, gallery: true }));
+    setGalleryError("");
+    try {
+      const uploadedPaths: string[] = [];
+      for (const file of selected.slice(0, remaining)) {
+        uploadedPaths.push(await client.upload(file));
+      }
+      setP((cur) => ({
+        ...cur,
+        gallery_images: [
+          ...cur.gallery_images,
+          ...uploadedPaths.map((path) => ({ image: path, image_alt: "" })),
+        ].slice(0, MAX_GALLERY_IMAGES),
+      }));
+      setIsSaved(false);
+    } catch (failure) {
+      setGalleryError(
+        failure instanceof Error
+          ? failure.message
+          : "We couldn’t upload one of the gallery photos.",
+      );
+    } finally {
+      setUploads((cur) => ({ ...cur, gallery: false }));
+    }
+  }
+
+  function moveGalleryItem(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= p.gallery_images.length) return;
+    setP((cur) => {
+      const next = [...cur.gallery_images];
+      const [moved] = next.splice(index, 1);
+      next.splice(target, 0, moved);
+      return { ...cur, gallery_images: next };
+    });
+    setIsSaved(false);
+  }
+
+  function promoteGalleryToCover(index: number) {
+    const chosen = p.gallery_images[index];
+    if (!chosen) return;
+    setP((cur) => {
+      const next = [...cur.gallery_images];
+      next[index] = { image: cur.image, image_alt: cur.image_alt };
+      return {
+        ...cur,
+        image: chosen.image,
+        image_alt: chosen.image_alt || cur.image_alt,
+        gallery_images: next,
+      };
+    });
+    setIsSaved(false);
+  }
+
+  function removeGalleryItem(index: number) {
+    setP((cur) => ({
+      ...cur,
+      gallery_images: cur.gallery_images.filter((_, idx) => idx !== index),
+    }));
+    setGalleryError("");
     setIsSaved(false);
   }
 
@@ -369,6 +454,104 @@ export function ProductEditor({ initial }: { initial?: CatalogProduct }) {
                       "Describe the image. If blank, the product name is used.",
                   })}
                 </div>
+              </Card>
+              <Card
+                title={`Carousel gallery (${p.gallery_images.length} / ${MAX_GALLERY_IMAGES})`}
+                subtitle="Extra photos shown in the product detail carousel (up to 8 total with cover)"
+              >
+                <div className="product-upload" style={{ borderTop: 0 }}>
+                  <Field
+                    label={
+                      uploads.gallery
+                        ? "Uploading gallery photos…"
+                        : "Add gallery photos"
+                    }
+                    hint="Select one or multiple JPG, PNG, or WebP files (up to 5 MB each)."
+                  >
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      disabled={
+                        busy || p.gallery_images.length >= MAX_GALLERY_IMAGES
+                      }
+                      onChange={(event) => void uploadGalleryFiles(event)}
+                    />
+                  </Field>
+                  {(galleryError || errors.gallery_images?.[0]) && (
+                    <p className="form-error" role="alert">
+                      {galleryError || errors.gallery_images?.[0]}
+                    </p>
+                  )}
+                </div>
+                {p.gallery_images.length > 0 && (
+                  <div className="admin-gallery-list">
+                    {p.gallery_images.map((item, index) => (
+                      <div
+                        key={`${item.image}-${index}`}
+                        className="admin-gallery-item"
+                      >
+                        <div className="admin-gallery-thumb">
+                          <ProductImage
+                            path={item.image}
+                            alt={item.image_alt || p.name || "Gallery photo"}
+                            width={56}
+                            height={52}
+                          />
+                        </div>
+                        <div className="admin-gallery-body">
+                          <input
+                            aria-label={`Gallery photo ${index + 2} alt text`}
+                            placeholder="Optional caption / alt text"
+                            maxLength={255}
+                            value={item.image_alt}
+                            onChange={(event) => {
+                              const value = event.target.value;
+                              setP((cur) => {
+                                const next = [...cur.gallery_images];
+                                next[index] = {
+                                  ...item,
+                                  image_alt: value,
+                                };
+                                return { ...cur, gallery_images: next };
+                              });
+                              setIsSaved(false);
+                            }}
+                          />
+                          <div className="admin-gallery-actions">
+                            <button
+                              type="button"
+                              disabled={index === 0}
+                              onClick={() => moveGalleryItem(index, -1)}
+                            >
+                              ← Earlier
+                            </button>
+                            <button
+                              type="button"
+                              disabled={index === p.gallery_images.length - 1}
+                              onClick={() => moveGalleryItem(index, 1)}
+                            >
+                              Later →
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => promoteGalleryToCover(index)}
+                            >
+                              Set cover
+                            </button>
+                            <button
+                              type="button"
+                              className="danger"
+                              onClick={() => removeGalleryItem(index)}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </Card>
               <Card title="Catalog settings">
                 <div className="product-settings">

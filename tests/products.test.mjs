@@ -3,6 +3,7 @@ import test from "node:test";
 import { ApiError } from "../lib/api.ts";
 import { handleDialogCancel } from "../lib/dialog.ts";
 import {
+  MAX_GALLERY_IMAGES,
   createProductsClient,
   blankProduct,
   productPayload,
@@ -192,4 +193,21 @@ test("name-to-slug handles punctuation, accents and whitespace", () => {
   );
   assert.equal(slugFromName("Café seafood"), "cafe-seafood");
   assert.equal(slugFromName("---"), "");
+});
+
+test("productPayload normalizes up to 7 gallery_images and caps at MAX_GALLERY_IMAGES", () => {
+  assert.equal(MAX_GALLERY_IMAGES, 7);
+  const payload = productPayload({
+    ...blankProduct,
+    name: "Gahot",
+    gallery_images: Array.from({ length: 9 }, (_, i) => ({
+      image: `/storage/products/g_${i}.jpg`,
+      image_alt: `  View ${i}  `,
+    })),
+  });
+  assert.equal(payload.gallery_images.length, 7);
+  assert.deepEqual(payload.gallery_images[0], {
+    image: "/storage/products/g_0.jpg",
+    image_alt: "View 0",
+  });
 });
