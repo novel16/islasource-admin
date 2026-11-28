@@ -229,7 +229,7 @@ export function RfqDetail({ id }: { id: string }) {
 
 function LiveRfqDetail({ id }: { id: number }) {
   const { request } = useAuth();
-  const { settings, notify } = useWorkspace();
+  const { notify } = useWorkspace();
   const router = useRouter();
   const { data, error, loading, retry } = useApiResource<{ data: ApiRfq }>(
     apiEndpoints.rfq(id),
@@ -274,9 +274,6 @@ function LiveRfqDetail({ id }: { id: number }) {
     try {
       const created = await createQuotationsClient(request).createForRfq(
         rfq.id,
-        {
-          validity_hours: Math.min(720, Math.max(1, settings.validity * 24)),
-        },
       );
       router.push(`/quotations/${created.id}`);
     } catch (failure) {

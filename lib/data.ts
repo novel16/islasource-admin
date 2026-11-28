@@ -1,19 +1,3 @@
-export type WorkspaceSettings = {
-  business: string;
-  email: string;
-  phone: string;
-  address: string;
-  validity: number;
-};
-
-export const defaultWorkspaceSettings: WorkspaceSettings = {
-  business: "IslaSource Seafoods",
-  email: "hello@islasource.ph",
-  phone: "",
-  address: "Bantayan Island, Cebu, Philippines",
-  validity: 2,
-};
-
 export const money = (centavos: number) =>
   new Intl.NumberFormat("en-PH", {
     style: "currency",
